@@ -1,0 +1,59 @@
+components:
+  schemas:
+    Media:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Media ID
+        fileName:
+          type: string
+          description: Media file name
+        filePath:
+          type: string
+          description: Media file path on server
+        mimeType:
+          type: string
+          description: Media MIME type
+        fileSize:
+          type: integer
+          description: Media file size in bytes
+        url:
+          type: string
+          format: uri
+          description: Media public URL
+        width:
+          type: integer
+          nullable: true
+          description: Media width in pixels (for images)
+        height:
+          type: integer
+          nullable: true
+          description: Media height in pixels (for images)
+        altText:
+          type: string
+          nullable: true
+          description: Alternative text for accessibility
+        caption:
+          type: string
+          nullable: true
+          description: Caption for the media
+        createdBy:
+          type: string
+          description: ID of the user who created the media
+        createdAt:
+          type: string
+          format: date-time
+          description: Creation timestamp
+        deletedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: Deletion timestamp
+
+  # securitySchemes:
+  #   bearerAuth:
+  #     type: http
+  #     scheme: bearer
+  #     bearerFormat: JWT

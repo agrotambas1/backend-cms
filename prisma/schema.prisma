@@ -5,11 +5,86 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
-  provider = "prisma-client"
-  output   = "../src/generated/prisma"
+  provider = "prisma-client-js"
+  // output   = "../src/generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String    @id @default(uuid()) @db.Uuid
+  name      String
+  username  String
+  email     String
+  password  String
+  role      String
+  isActive  Boolean   @default(true) @map("is_active")
+  createdAt DateTime  @default(now())  @map("created_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@unique([username, deletedAt])
+  @@unique([email, deletedAt])
+
+  media     Media[]
+  bannersCreated Banner[] @relation("BannerCreator")
+  bannersUpdated Banner[] @relation("BannerUpdater")
+
+  @@map("users")
+}
+
+model Media {
+  id        String    @id @default(uuid()) @db.Uuid
+  fileName  String    @map("file_name")
+  filePath  String    @map("file_path")
+  mimeType  String    @map("mime_type")
+  fileSize  Int       @map("file_size")
+  url       String?
+  path      String?
+  width     Int?
+  height    Int?
+  altText   String?   @map("alt_text")
+  caption   String?
+
+  createdBy String    @map("created_by") @db.Uuid
+  creator   User      @relation(fields: [createdBy], references: [id])
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  images    Banner[]
+
+  @@map("media")
+}
+
+model Banner {
+  id          String    @id @default(uuid()) @db.Uuid
+  title       String
+  description String
+  imageId     String    @map("image_id") @db.Uuid
+  image       Media     @relation(fields: [imageId], references: [id])
+  imageUrl    String?   @map("image_url")
+  imageAlt    String?   @map("image_alt")
+  linkImage   String?   @map("link_image")
+  order       Int       @default(0)
+  status      String    @default("draft")
+
+  startDate   DateTime? @map("start_date")
+  endDate     DateTime? @map("end_date")
+
+  createdBy   String    @map("created_by") @db.Uuid
+  creator     User      @relation("BannerCreator", fields: [createdBy], references: [id])
+
+  updatedBy   String    @map("updated_by") @db.Uuid
+  updater     User      @relation("BannerUpdater", fields: [updatedBy], references: [id])
+
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+
+  @@index([status, startDate, endDate])
+
+  @@map("banner")
 }

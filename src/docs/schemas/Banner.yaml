@@ -1,0 +1,42 @@
+components:
+  schemas:
+    Banner:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Banner ID
+        title:
+          type: string
+          description: Banner title
+        image:
+          $ref: "#/components/schemas/Media"
+          description: Banner image
+        link:
+          type: string
+          format: uri
+          nullable: true
+          description: URL link for the banner
+        status:
+          type: string
+          description: Status of the banner (e.g., draft, published)
+        order:
+          type: integer
+          description: Display order of the banner
+        createdBy:
+          type: string
+          description: ID of the user who created the banner
+        createdAt:
+          type: string
+          format: date-time
+          description: Creation timestamp
+        updatedAt:
+          type: string
+          format: date-time
+          description: Last update timestamp
+        deletedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: Deletion timestamp
