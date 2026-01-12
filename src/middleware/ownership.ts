@@ -39,17 +39,48 @@ const checkOwnership = (resourceName: string, findFunction: any) => {
   };
 };
 
-// Specific ownership middlewares
-export const checkMediaOwnership = checkOwnership(
-  "Media",
-  async (id: string) => {
-    return await prisma.media.findUnique({ where: { id } });
-  }
-);
+export const checkUserOwnership = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const { id } = req.params;
 
-// export const checkArticleOwnership = checkOwnership("Article", async (id: string) => {
-//   return await prisma.article.findUnique({ where: { id } });
-// });
+  if (!id) {
+    return res.status(400).json({ message: "User ID is required" });
+  }
+
+  if (req.user!.role === "ADMIN") {
+    return next();
+  }
+
+  if (req.user!.id !== id) {
+    return res.status(403).json({
+      message: "Forbidden: You can only manage your own account",
+    });
+  }
+
+  if ("role" in req.body) {
+    delete req.body.role;
+  }
+
+  next();
+};
+
+// Specific ownership middlewares
+// export const checkMediaOwnership = checkOwnership(
+//   "Media",
+//   async (id: string) => {
+//     return await prisma.media.findUnique({ where: { id } });
+//   }
+// );
+
+// export const checkArticleOwnership = checkOwnership(
+//   "Article",
+//   async (id: string) => {
+//     return await prisma.article.findUnique({ where: { id } });
+//   }
+// );
 
 // export const checkEventOwnership = checkOwnership("Event", async (id: string) => {
 //   return await prisma.event.findUnique({ where: { id } });
@@ -59,6 +90,9 @@ export const checkMediaOwnership = checkOwnership(
 //   return await prisma.caseStudy.findUnique({ where: { id } });
 // });
 
-// export const checkBannerOwnership = checkOwnership("Banner", async (id: string) => {
-//   return await prisma.banner.findUnique({ where: { id } });
-// });
+// export const checkBannerOwnership = checkOwnership(
+//   "Banner",
+//   async (id: string) => {
+//     return await prisma.banner.findUnique({ where: { id } });
+//   }
+// );

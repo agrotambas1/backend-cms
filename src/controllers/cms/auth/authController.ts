@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
-import { prisma } from "../../config/db";
+import { prisma } from "../../../config/db";
 import bcrypt from "bcryptjs";
-import { generateToken } from "../../utils/generateToken";
+import { generateToken } from "../../../utils/generateToken";
 
 export const loginUser = async (req: Request, res: Response) => {
   const { username, email, password } = req.body;

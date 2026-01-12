@@ -4,13 +4,24 @@ import {
   getUser,
   registerUser,
   updateUser,
-} from "../../controllers/cms/userController";
-import { authMiddleware } from "../../middleware/authMiddleware";
-import { adminOnly } from "../../middleware/permission";
+} from "../../../controllers/cms/users/userController";
+import { authMiddleware } from "../../../middleware/authMiddleware";
+import { adminOnly } from "../../../middleware/permission";
+import { protectAdminAccount } from "../../../middleware/protectedAdmin";
 
 const router = express.Router();
 
 router.use(authMiddleware);
+
+router.get("/users", adminOnly, getUser);
+
+router.post("/users", adminOnly, registerUser);
+
+router.put("/users/:id", adminOnly, protectAdminAccount, updateUser);
+
+router.delete("/users/:id", adminOnly, protectAdminAccount, deleteUser);
+
+export default router;
 
 /** @swagger
  * /api/cms/users:
@@ -23,7 +34,6 @@ router.use(authMiddleware);
  *       200:
  *         description: A list of users
  */
-router.get("/users", adminOnly, getUser);
 
 /** @swagger
  * /api/cms/users:
@@ -41,8 +51,11 @@ router.get("/users", adminOnly, getUser);
  *     responses:
  *       201:
  *         description: User registered successfully
+ *       400:
+ *         description: Username or email already taken
+ *       500:
+ *         description: Server error
  */
-router.post("/users", adminOnly, registerUser);
 
 /**
  * @swagger
@@ -63,22 +76,7 @@ router.post("/users", adminOnly, registerUser);
  *       content:
  *         application/json:
  *           schema:
- *             type: object
- *             properties:
- *               name:
- *                 type: string
- *               username:
- *                 type: string
- *               email:
- *                 type: string
- *                 format: email
- *               password:
- *                 type: string
- *                 format: password
- *               role:
- *                 type: string
- *               isActive:
- *                 type: boolean
+ *             $ref: '#/components/schemas/UserRegister'
  *     responses:
  *       200:
  *         description: User updated successfully
@@ -89,7 +87,6 @@ router.post("/users", adminOnly, registerUser);
  *       500:
  *         description: Server error
  */
-router.put("/users/:id", adminOnly, updateUser);
 
 /**
  * @swagger
@@ -113,6 +110,3 @@ router.put("/users/:id", adminOnly, updateUser);
  *       500:
  *         description: Server error
  */
-router.delete("/users/:id", adminOnly, deleteUser);
-
-export default router;

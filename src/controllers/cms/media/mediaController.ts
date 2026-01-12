@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { prisma } from "../../config/db";
+import { prisma } from "../../../config/db";
 import fs from "fs";
 
 export const getMedia = async (req: Request, res: Response) => {

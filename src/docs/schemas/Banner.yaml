@@ -40,3 +40,69 @@ components:
           format: date-time
           nullable: true
           description: Deletion timestamp
+
+    CreateBanner:
+      type: object
+      required:
+        - title
+        - description
+        - imageId
+      properties:
+        imageId:
+          type: string
+          description: ID of existing media to use as banner
+        title:
+          type: string
+          description: Title of the banner
+        description:
+          type: string
+          description: Description of the banner
+        linkImage:
+          type: string
+          description: Optional link when banner is clicked
+        order:
+          type: integer
+          description: Banner display order
+        status:
+          type: string
+          enum: [draft, active, inactive]
+          description: Banner status
+        startDate:
+          type: string
+          format: date-time
+          description: Banner start date (optional)
+        endDate:
+          type: string
+          format: date-time
+          description: Banner end date (optional)
+
+    UpdateBanner:
+      type: object
+      properties:
+        imageId:
+          type: string
+          description: ID of existing media to use as banner
+        title:
+          type: string
+          description: Title of the banner
+        description:
+          type: string
+          description: Description of the banner
+        linkImage:
+          type: string
+          description: Optional link when banner is clicked
+        order:
+          type: integer
+          description: Banner display order
+        status:
+          type: string
+          enum: [draft, active, inactive]
+          description: Banner status
+        startDate:
+          type: string
+          format: date-time
+          description: Banner start date (optional)
+        endDate:
+          type: string
+          format: date-time
+          description: Banner end date (optional)

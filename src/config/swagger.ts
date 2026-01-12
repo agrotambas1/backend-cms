@@ -9,7 +9,7 @@ const swaggerDefinition = {
       version: "1.0.0",
       description: "API documentation for LG Sinarmas CMS",
     },
-    servers: [{ url: "http://localhost:3000" }],
+    servers: [{ url: "http://localhost:4000" }],
     components: {
       securitySchemes: {
         bearerAuth: {
@@ -21,8 +21,8 @@ const swaggerDefinition = {
     },
   },
   apis: [
-    path.join(__dirname, "../routes/cms/*.ts"),
-    // path.join(__dirname, "../routes/public/*.ts"),
+    path.join(__dirname, "../routes/cms/**/*.ts"),
+    // path.join(__dirname, "../routes/public/**/*.ts"),
     path.join(__dirname, "../docs/schemas/*.yaml"),
   ],
 };

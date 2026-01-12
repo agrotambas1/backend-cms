@@ -5,14 +5,29 @@ import {
   getMediaById,
   updateMedia,
   uploadMedia,
-} from "../../controllers/cms/mediaController";
-import { uploadMedia as uploadMiddleware } from "../../middleware/upload";
-import { authMiddleware } from "../../middleware/authMiddleware";
-import { editorsOnly } from "../../middleware/permission";
+} from "../../../controllers/cms/media/mediaController";
+import { uploadMedia as uploadMiddleware } from "../../../middleware/upload";
+import { authMiddleware } from "../../../middleware/authMiddleware";
+import { editorsOnly } from "../../../middleware/permission";
 
 const router = express.Router();
 
 router.use(authMiddleware);
+
+router.get("/media", getMedia);
+
+router.get("/media/:id", getMediaById);
+
+router.post(
+  "/media",
+  uploadMiddleware.single("file"),
+  editorsOnly,
+  uploadMedia
+);
+
+router.delete("/media/:id", editorsOnly, deleteMedia);
+
+export default router;
 
 /**
  * @swagger
@@ -34,7 +49,6 @@ router.use(authMiddleware);
  *       500:
  *         description: Server error
  */
-router.get("/media", getMedia);
 
 /**
  * @swagger
@@ -56,7 +70,6 @@ router.get("/media", getMedia);
  *       404:
  *         description: Media not found
  */
-router.get("/media/:id", getMediaById);
 
 /**
  * @swagger
@@ -99,12 +112,6 @@ router.get("/media/:id", getMediaById);
  *       500:
  *         description: Server error
  */
-router.post(
-  "/media",
-  uploadMiddleware.single("file"),
-  editorsOnly,
-  uploadMedia
-);
 
 /**
  * @swagger
@@ -128,6 +135,3 @@ router.post(
  *       500:
  *         description: Server error
  */
-router.delete("/media/:id", editorsOnly, deleteMedia);
-
-export default router;

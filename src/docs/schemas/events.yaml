@@ -1,0 +1,278 @@
+components:
+  schemas:
+    Event:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Event unique identifier
+        title:
+          type: string
+          description: Event title
+        slug:
+          type: string
+          description: URL-friendly slug
+        excerpt:
+          type: string
+          nullable: true
+          description: Short event summary
+        content:
+          type: string
+          nullable: true
+          description: Full event description (HTML)
+        thumbnail:
+          type: string
+          nullable: true
+          description: Thumbnail URL
+        thumbnailAlt:
+          type: string
+          nullable: true
+          description: Thumbnail alt text
+        thumbnailId:
+          type: string
+          format: uuid
+          nullable: true
+          description: Reference to media table
+        eventStart:
+          type: string
+          format: date-time
+          description: Event start datetime
+        eventEnd:
+          type: string
+          format: date-time
+          description: Event end datetime
+        location:
+          type: string
+          nullable: true
+          description: Event location name
+        locationType:
+          type: string
+          enum: [offline, online, hybrid]
+          description: Event location type
+        meetingUrl:
+          type: string
+          nullable: true
+          description: Online meeting URL (if online)
+        registrationUrl:
+          type: string
+          nullable: true
+          description: Registration page URL
+        quota:
+          type: integer
+          nullable: true
+          description: Maximum participant quota
+        status:
+          type: string
+          enum: [draft, published, cancelled, archived]
+          description: Event status
+        isFeatured:
+          type: boolean
+          default: false
+          description: Featured event flag
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        deletedAt:
+          type: string
+          format: date-time
+          nullable: true
+        thumbnailMedia:
+          type: object
+          nullable: true
+          properties:
+            id:
+              type: string
+            fileName:
+              type: string
+            filePath:
+              type: string
+            altText:
+              type: string
+            url:
+              type: string
+        images:
+          type: array
+          items:
+            $ref: "#/components/schemas/EventImage"
+        creator:
+          type: object
+          properties:
+            id:
+              type: string
+            name:
+              type: string
+        updater:
+          type: object
+          nullable: true
+          properties:
+            id:
+              type: string
+            name:
+              type: string
+      required:
+        - id
+        - title
+        - slug
+        - eventStart
+        - eventEnd
+        - locationType
+        - status
+
+    CreateEvent:
+      type: object
+      required:
+        - title
+        - slug
+        - eventStart
+        - eventEnd
+        - locationType
+        - status
+      properties:
+        title:
+          type: string
+          description: "Judul event"
+        slug:
+          type: string
+          desc  ription: "Slug unik untuk URL"
+        excerpt:
+          type: string
+          nullable: true
+          description: "Ringkasan event"
+        content:
+          type: string
+          nullable: true
+          description: "Deskripsi lengkap event"
+        thumbnailId:
+          type: string
+          format: uuid
+          nullable: true
+          description: "UUID media untuk thumbnail utama event"
+        eventStart:
+          type: string
+          format: date-time
+          description: "Tanggal & waktu mulai event"
+        eventEnd:
+          type: string
+          format: date-time
+          description: "Tanggal & waktu selesai event"
+        location:
+          type: string
+          nullable: true
+          description: "Lokasi fisik event (jika offline/hybrid)"
+        locationType:
+          type: string
+          enum: [offline, online, hybrid]
+          description: "Jenis lokasi event"
+        meetingUrl:
+          type: string
+          nullable: true
+          description: "Link meeting (jika online/hybrid)"
+        registrationUrl:
+          type: string
+          nullable: true
+          description: "Link pendaftaran event"
+        quota:
+          type: integer
+          nullable: true
+          description: "Kuota peserta"
+        status:
+          type: string
+          enum: [draft, published, cancelled, archived]
+          description: "Status event"
+        isFeatured:
+          type: boolean
+          default: false
+          description: "Apakah event ditampilkan sebagai featured"
+        images:
+          type: string
+          description: 'JSON string array of gallery images, contoh: ''[{"mediaId":"media-uuid-1","order":0},{"mediaId":"media-uuid-2","order":1}]'''
+          example: '[{"mediaId":"media-uuid-1","order":0},{"mediaId":"media-uuid-2","order":1}]'
+
+    UpdateEvent:
+      type: object
+      properties:
+        title:
+          type: string
+          description: "Judul event"
+        slug:
+          type: string
+          description: "Slug unik untuk URL"
+        excerpt:
+          type: string
+          nullable: true
+          description: "Ringkasan event"
+        content:
+          type: string
+          nullable: true
+          description: "Deskripsi lengkap event"
+        thumbnailId:
+          type: string
+          format: uuid
+          nullable: true
+          description: "UUID media untuk thumbnail utama event (update jika ingin ganti)"
+        eventStart:
+          type: string
+          format: date-time
+          description: "Tanggal & waktu mulai event"
+        eventEnd:
+          type: string
+          format: date-time
+          description: "Tanggal & waktu selesai event"
+        location:
+          type: string
+          nullable: true
+          description: "Lokasi fisik event (jika offline/hybrid)"
+        locationType:
+          type: string
+          enum: [offline, online, hybrid]
+          description: "Jenis lokasi event"
+        meetingUrl:
+          type: string
+          nullable: true
+          description: "Link meeting (jika online/hybrid)"
+        registrationUrl:
+          type: string
+          nullable: true
+          description: "Link pendaftaran event"
+        quota:
+          type: integer
+          nullable: true
+          description: "Kuota peserta"
+        status:
+          type: string
+          enum: [draft, published, cancelled, archived]
+          description: "Status event"
+        isFeatured:
+          type: boolean
+          description: "Apakah event ditampilkan sebagai featured"
+        images:
+          type: string
+          description: 'JSON string array of gallery images, contoh: ''[{"mediaId":"media-uuid-1","order":0},{"mediaId":"media-uuid-2","order":1}]'''
+          example: '[{"mediaId":"media-uuid-1","order":0},{"mediaId":"media-uuid-2","order":1}]'
+
+    EventImage:
+      type: object
+      required:
+        - id
+        - eventId
+        - mediaId
+      properties:
+        id:
+          type: string
+          format: uuid
+        eventId:
+          type: string
+          format: uuid
+        mediaId:
+          type: string
+          format: uuid
+        order:
+          type: integer
+          default: 0
+        createdAt:
+          type: string
+          format: date-time
