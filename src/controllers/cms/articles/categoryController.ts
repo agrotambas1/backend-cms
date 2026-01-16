@@ -1,5 +1,27 @@
 import { Request, Response } from "express";
 import { prisma } from "../../../config/db";
+import {
+  buildCMSArticleCategoryPaginationParams,
+  buildCMSArticleCategorySortParams,
+  buildCMSArticleCategoryWhereCondition,
+} from "../../../utils/queryBuilder/cms/article/categories";
+
+// export const getCategories = async (req: Request, res: Response) => {
+//   try {
+//     if (!req.user?.id) {
+//       return res.status(401).json({ message: "Unauthorized" });
+//     }
+
+//     const categories = await prisma.articleCategory.findMany({
+//       where: { deletedAt: null },
+//       orderBy: { createdAt: "desc" },
+//     });
+//     return res.status(200).json(categories);
+//   } catch (error) {
+//     console.error("Error fetching categories:", error);
+//     res.status(500).json({ message: "Failed to fetch categories" });
+//   }
+// };
 
 export const getCategories = async (req: Request, res: Response) => {
   try {
@@ -7,11 +29,48 @@ export const getCategories = async (req: Request, res: Response) => {
       return res.status(401).json({ message: "Unauthorized" });
     }
 
-    const categories = await prisma.category.findMany({
-      where: { deletedAt: null },
-      orderBy: { createdAt: "desc" },
+    const {
+      page = "1",
+      limit = "10",
+      search,
+      isActive,
+      sortBy,
+      order,
+    } = req.query;
+
+    const where = buildCMSArticleCategoryWhereCondition({
+      search: search as string,
+      isActive: isActive as string,
     });
-    return res.status(200).json(categories);
+
+    const pagination = buildCMSArticleCategoryPaginationParams(
+      page as string,
+      limit as string
+    );
+
+    const orderBy = buildCMSArticleCategorySortParams(
+      sortBy as string,
+      order as string
+    );
+
+    const [categories, total] = await Promise.all([
+      prisma.articleCategory.findMany({
+        where,
+        orderBy,
+        ...pagination,
+      }),
+      prisma.articleCategory.count({ where }),
+    ]);
+
+    return res.status(200).json({
+      data: categories,
+      meta: {
+        total,
+        page: Number(page),
+        limit: Number(limit),
+        totalPages: Math.ceil(total / Number(limit)),
+      },
+    });
   } catch (error) {
     console.error("Error fetching categories:", error);
     res.status(500).json({ message: "Failed to fetch categories" });
@@ -40,7 +99,7 @@ export const createCategory = async (req: Request, res: Response) => {
 
     const slug = generateSlug(name);
 
-    const existing = await prisma.category.findFirst({
+    const existing = await prisma.articleCategory.findFirst({
       where: {
         slug,
         deletedAt: null,
@@ -53,7 +112,7 @@ export const createCategory = async (req: Request, res: Response) => {
       });
     }
 
-    const category = await prisma.category.create({
+    const category = await prisma.articleCategory.create({
       data: {
         name,
         slug,
@@ -100,7 +159,7 @@ export const updateCategory = async (req: Request, res: Response) => {
 
     const slug = generateSlug(name);
 
-    const existing = await prisma.category.findFirst({
+    const existing = await prisma.articleCategory.findFirst({
       where: {
         slug,
         NOT: { id },
@@ -113,13 +172,14 @@ export const updateCategory = async (req: Request, res: Response) => {
       });
     }
 
-    const category = await prisma.category.update({
+    const category = await prisma.articleCategory.update({
       where: { id },
       data: {
         name,
         slug,
         description,
         isActive: typeof isActive === "boolean" ? isActive : true,
+        updatedAt: new Date(),
       },
     });
 
@@ -153,7 +213,7 @@ export const deleteCategory = async (req: Request, res: Response) => {
       return res.status(400).json({ message: "Category ID is required" });
     }
 
-    const category = await prisma.category.findUnique({
+    const category = await prisma.articleCategory.findUnique({
       where: { id },
     });
 
@@ -161,7 +221,7 @@ export const deleteCategory = async (req: Request, res: Response) => {
       return res.status(404).json({ message: "Category not found" });
     }
 
-    await prisma.category.update({
+    await prisma.articleCategory.update({
       where: { id },
       data: {
         deletedAt: new Date(),

@@ -5,7 +5,37 @@ import { validateArticleData } from "../../../validators/articleValidator";
 import {
   articleInclude,
   transformArticle,
-} from "../../../includes/articleInclude";
+} from "../../../includes/cms/articleInclude";
+import {
+  buildCMSArticlePaginationParams,
+  buildCMSArticleSortParams,
+  buildCMSArticleWhereCondition,
+} from "../../../utils/queryBuilder/cms/article/article";
+
+// export const getArticles = async (req: Request, res: Response) => {
+//   try {
+//     if (!req.user?.id) {
+//       return res.status(401).json({ message: "Unauthorized" });
+//     }
+
+//     const articles = await prisma.article.findMany({
+//       where: {
+//         deletedAt: null,
+//       },
+//       include: articleInclude,
+//       orderBy: {
+//         createdAt: "desc",
+//       },
+//     });
+
+//     const transformedArticles = articles.map(transformArticle);
+
+//     return res.status(200).json(transformedArticles);
+//   } catch (error) {
+//     console.error("Error fetching articles:", error);
+//     res.status(500).json({ message: "Failed to fetch articles" });
+//   }
+// };
 
 export const getArticles = async (req: Request, res: Response) => {
   try {
@@ -13,77 +43,55 @@ export const getArticles = async (req: Request, res: Response) => {
       return res.status(401).json({ message: "Unauthorized" });
     }
 
-    const articles = await prisma.article.findMany({
-      where: {
-        deletedAt: null,
-      },
-      include: {
-        thumbnailMedia: {
-          select: {
-            id: true,
-            fileName: true,
-            filePath: true,
-            altText: true,
-            url: true,
-          },
-        },
-        category: {
-          select: {
-            id: true,
-            name: true,
-            slug: true,
-          },
-        },
-        tags: {
-          include: {
-            tag: {
-              select: {
-                id: true,
-                name: true,
-                slug: true,
-              },
-            },
-          },
-          orderBy: {
-            tag: {
-              createdAt: "asc",
-            },
-          },
-        },
-        creator: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-        updater: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-        seoKeywords: {
-          select: {
-            id: true,
-            keyword: true,
-            order: true,
-          },
-          orderBy: {
-            order: "asc",
-          },
-        },
-      },
-      orderBy: {
-        createdAt: "desc",
-      },
+    const {
+      page = "1",
+      limit = "10",
+      sortBy,
+      order,
+      categorySlug,
+      tagSlug,
+      search,
+      status,
+      isFeatured,
+    } = req.query;
+
+    const where = buildCMSArticleWhereCondition({
+      categorySlug: categorySlug as string,
+      tagSlug: tagSlug as string,
+      search: search as string,
+      status: status as string,
+      isFeatured: isFeatured as string,
     });
 
-    const transformedArticles = articles.map((article) => ({
-      ...article,
-      tags: article.tags.map((at) => at.tag),
-    }));
+    const pagination = buildCMSArticlePaginationParams(
+      page as string,
+      limit as string
+    );
 
-    return res.status(200).json(transformedArticles);
+    const orderBy = buildCMSArticleSortParams(
+      sortBy as string,
+      order as string
+    );
+
+    const [articles, total] = await Promise.all([
+      prisma.article.findMany({
+        where,
+        include: articleInclude,
+        orderBy,
+        ...pagination,
+      }),
+      prisma.article.count({ where }),
+    ]);
+
+    return res.status(200).json({
+      data: articles.map(transformArticle),
+      meta: {
+        total,
+        page: Number(page),
+        limit: Number(limit),
+        totalPages: Math.ceil(total / Number(limit)),
+      },
+    });
   } catch (error) {
     console.error("Error fetching articles:", error);
     res.status(500).json({ message: "Failed to fetch articles" });
@@ -104,74 +112,17 @@ export const getArticleById = async (req: Request, res: Response) => {
 
     const article = await prisma.article.findUnique({
       where: { id },
-      include: {
-        thumbnailMedia: {
-          select: {
-            id: true,
-            fileName: true,
-            filePath: true,
-            altText: true,
-            url: true,
-          },
-        },
-        category: {
-          select: {
-            id: true,
-            name: true,
-            slug: true,
-          },
-        },
-        tags: {
-          include: {
-            tag: {
-              select: {
-                id: true,
-                name: true,
-                slug: true,
-              },
-            },
-          },
-          orderBy: {
-            tag: {
-              createdAt: "asc",
-            },
-          },
-        },
-        creator: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-        updater: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-        seoKeywords: {
-          select: {
-            id: true,
-            keyword: true,
-            order: true,
-          },
-          orderBy: {
-            order: "asc",
-          },
-        },
-      },
+      include: articleInclude,
     });
 
     if (!article || article.deletedAt) {
       return res.status(404).json({ message: "Article not found" });
     }
 
-    const transformedArticle = {
-      ...article,
-      tags: article.tags.map((at) => at.tag),
-    };
-
-    return res.status(200).json(transformedArticle);
+    return res.status(200).json({
+      status: "success",
+      data: transformArticle(article),
+    });
   } catch (error) {
     console.error("Error fetching article:", error);
     res.status(500).json({ message: "Failed to fetch article" });
@@ -230,7 +181,7 @@ export const createArticle = async (req: Request, res: Response) => {
     }
 
     // Check category exists
-    const categoryExists = await prisma.category.findUnique({
+    const categoryExists = await prisma.articleCategory.findUnique({
       where: { id: categoryId },
     });
 
@@ -386,7 +337,7 @@ export const updateArticle = async (req: Request, res: Response) => {
 
     // Check category exists
     if (categoryId) {
-      const categoryExists = await prisma.category.findUnique({
+      const categoryExists = await prisma.articleCategory.findUnique({
         where: { id: categoryId },
       });
 

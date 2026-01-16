@@ -1,14 +1,81 @@
 import { Request, Response } from "express";
 import { prisma } from "../../../config/db";
 import bcrypt from "bcryptjs";
+import {
+  buildCMSUserPaginationParams,
+  buildCMSUserSortParams,
+  buildCMSUserWhereCondition,
+} from "../../../utils/queryBuilder/cms/users/users";
+
+// export const getUser = async (req: Request, res: Response) => {
+//   if (!req.user) {
+//     return res.status(401).json({ message: "Unauthorized" });
+//   }
+
+//   const users = await prisma.user.findMany();
+//   res.json(users);
+// };
 
 export const getUser = async (req: Request, res: Response) => {
-  if (!req.user) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
+  try {
+    if (!req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
 
-  const users = await prisma.user.findMany();
-  res.json(users);
+    const {
+      page = "1",
+      limit = "10",
+      search,
+      isActive,
+      role,
+      sortBy,
+      order,
+    } = req.query;
+
+    const where = buildCMSUserWhereCondition({
+      search: search as string,
+      isActive: isActive as string,
+      role: role as string,
+    });
+
+    const pagination = buildCMSUserPaginationParams(
+      page as string,
+      limit as string
+    );
+
+    const orderBy = buildCMSUserSortParams(sortBy as string, order as string);
+
+    const [users, total] = await Promise.all([
+      prisma.user.findMany({
+        where,
+        orderBy,
+        ...pagination,
+        select: {
+          id: true,
+          name: true,
+          username: true,
+          email: true,
+          role: true,
+          isActive: true,
+          createdAt: true,
+        },
+      }),
+      prisma.user.count({ where }),
+    ]);
+
+    return res.status(200).json({
+      data: users,
+      meta: {
+        total,
+        page: Number(page),
+        limit: Number(limit),
+        totalPages: Math.ceil(total / Number(limit)),
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching users:", error);
+    res.status(500).json({ message: "Failed to fetch users" });
+  }
 };
 
 export const registerUser = async (req: Request, res: Response) => {
@@ -153,7 +220,6 @@ export const deleteUser = async (req: Request, res: Response) => {
       return res.status(400).json({ message: "User ID is required" });
     }
 
-    // Check if user exists
     const userExists = await prisma.user.findUnique({
       where: { id },
     });
@@ -166,9 +232,15 @@ export const deleteUser = async (req: Request, res: Response) => {
       return res.status(400).json({ message: "You cannot delete yourself" });
     }
 
-    // Hard delete
-    await prisma.user.delete({
+    // await prisma.user.delete({
+    //   where: { id },
+    // });
+
+    await prisma.user.update({
       where: { id },
+      data: {
+        deletedAt: new Date(),
+      },
     });
 
     res.json({

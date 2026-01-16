@@ -38,6 +38,9 @@ model User {
   createdEvents   Event[] @relation("EventCreator")
   updatedEvents   Event[] @relation("EventUpdater")
 
+  createdCaseStudies CaseStudy[] @relation("CaseStudyCreator")
+  updatedCaseStudies CaseStudy[] @relation("CaseStudyUpdater")
+
   @@map("users")
 }
 
@@ -65,6 +68,9 @@ model Media {
 
   eventThumbnails Event[] @relation("EventThumbnail")
   eventImages EventImage[]
+
+  caseStudyThumbnails CaseStudy[] @relation("CaseStudyThumbnail")
+  caseStudyImages CaseStudyImage[]
 
   @@map("media")
 }
@@ -98,7 +104,7 @@ model Banner {
   @@map("banner")
 }
 
-model Category {
+model ArticleCategory {
   id          String    @id @default(uuid()) @db.Uuid
   name        String
   slug        String
@@ -110,10 +116,10 @@ model Category {
   articles  Article[]
 
   @@unique([slug, deletedAt])
-  @@map("categories")
+  @@map("article_categories")
 }
 
-model Tag {
+model ArticleTag {
   id          String    @id @default(uuid())  @db.Uuid
   name        String
   slug        String
@@ -121,10 +127,10 @@ model Tag {
   createdAt   DateTime  @default(now()) @map("create_at")
   deletedAt   DateTime? @map("deleted_at")
 
-  articles   ArticleTag[]
+  articles   PivotArticleTag[]
 
   @@unique([slug, deletedAt])
-  @@map("tags")
+  @@map("article_tags")
 }
 
 model Article {
@@ -156,27 +162,27 @@ model Article {
   deletedAt   DateTime?  @map("deleted_at")
 
   thumbnailMedia  Media?  @relation("ArticleThumbnail", fields: [thumbnailId], references: [id])
-  category        Category  @relation(fields: [categoryId], references: [id])
+  category        ArticleCategory  @relation(fields: [categoryId], references: [id])
   creator         User      @relation("ArticleCreator", fields: [createdBy], references: [id])
   updater         User?     @relation("ArticleUpdater", fields: [updatedBy], references: [id])
 
-  tags            ArticleTag[]
+  tags            PivotArticleTag[]
   seoKeywords     ArticleSeoKeyword[]
 
   @@unique([slug, deletedAt])
   @@map("articles")
 }
 
-model ArticleTag {
+model PivotArticleTag {
   articleId String @map("article_id") @db.Uuid
   tagId     String @map("tag_id") @db.Uuid
   createdAt DateTime @default(now()) @map("created_at")
 
   article Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
-  tag     Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  tag     ArticleTag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
 
   @@id([articleId, tagId])
-  @@map("article_tags")
+  @@map("pivot_article_tags")
 }
 
 
@@ -198,8 +204,8 @@ model Event {
   id    String  @id @default(uuid()) @db.Uuid
   title String
   slug  String
-  excerpt String?
-  content String?
+  excerpt String? @db.Text
+  content String? @db.Text
 
   thumbnailId   String? @map("thumbnail_id") @db.Uuid
 
@@ -248,4 +254,102 @@ model EventImage {
 
   @@unique([eventId, mediaId])
   @@map("event_images")
+}
+
+model CaseStudyCategory {
+  id  String  @id @default(uuid()) @db.Uuid
+  name  String
+  slug  String
+  description String?
+  icon  String?
+  order Int @default(0)
+  isActive  Boolean @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime? @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  caseStudies  CaseStudy[]
+
+  @@unique([slug, deletedAt])
+  @@map("case_studies_categories")
+}
+
+model CaseStudyTechnology{
+  id  String @id @default(uuid()) @db.Uuid
+  name  String
+  slug  String
+  icon  String?
+  color String?
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  caseStudies PivotCaseStudyTechnology[]
+
+  @@unique([slug, deletedAt])
+  @@map("case_studies_technologies")
+}
+
+model CaseStudy {
+  id  String  @id @default(uuid()) @db.Uuid
+  title String
+  slug  String
+  description String? @db.Text
+  content String? @db.Text
+
+  client  String?
+  projectUrl  String? @map("project_url")
+  demoURL String? @map("demo_url")
+  duration  String?
+  year  Int?
+
+  thumbnailId String? @map("thumbnail_id")  @db.Uuid
+  thumbnailMedia   Media?    @relation("CaseStudyThumbnail", fields: [thumbnailId], references: [id])
+
+  status  String  @default("draft")
+  publishedAt DateTime? @map("published_at")
+  isFeatured  Boolean @default(false) @map("is_featured")
+  order Int @default(0)
+
+  categoryId  String? @map("category_id") @db.Uuid
+  createdBy String  @map("created_by") @db.Uuid
+  updatedBy String? @map("updated_by") @db.Uuid
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt  @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  category  CaseStudyCategory?  @relation(fields: [categoryId], references: [id])
+  creator User @relation("CaseStudyCreator", fields: [createdBy], references: [id])
+  updater User? @relation("CaseStudyUpdater", fields: [updatedBy], references: [id])
+  images  CaseStudyImage[]
+  technologies  PivotCaseStudyTechnology[]
+
+  @@unique([slug, deletedAt])
+  @@map("case_studies")
+}
+
+model CaseStudyImage {
+  id  String  @id @default(uuid()) @db.Uuid
+  caseStudyId String  @map("case_studies_id") @db.Uuid
+  imageId String  @map("image_id") @db.Uuid
+  order Int @default(0)
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  caseStudy CaseStudy @relation(fields: [caseStudyId], references: [id])
+  media Media @relation(fields: [imageId], references: [id])
+
+  @@map("case_studies_images")
+}
+
+model PivotCaseStudyTechnology {
+  caseStudyId  String  @map("case_studies_id") @db.Uuid
+  technologyId  String  @map("technology_id") @db.Uuid
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  caseStudy CaseStudy @relation(fields: [caseStudyId], references: [id])
+  technology CaseStudyTechnology @relation(fields: [technologyId], references: [id])
+
+  @@id([caseStudyId, technologyId])
+  @@map("pivot_case_studies_technologies")
 }

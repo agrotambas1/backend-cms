@@ -1,0 +1,66 @@
+import { Prisma } from "@prisma/client";
+
+interface CMSMediaFilterParams {
+  search?: string;
+  type?: string;
+}
+
+export const buildCMSMediaWhereCondition = (
+  params: CMSMediaFilterParams
+): Prisma.MediaWhereInput => {
+  const where: Prisma.MediaWhereInput = {
+    deletedAt: null,
+  };
+
+  if (params.search) {
+    where.OR = [
+      { altText: { contains: params.search, mode: "insensitive" } },
+      { caption: { contains: params.search, mode: "insensitive" } },
+      { mimeType: { contains: params.search, mode: "insensitive" } },
+    ];
+  }
+
+  if (params.type) {
+    if (params.type === "image") {
+      where.mimeType = { startsWith: "image/" };
+    }
+
+    if (params.type === "video") {
+      where.mimeType = { startsWith: "video/" };
+    }
+
+    if (params.type === "document") {
+      where.mimeType = {
+        in: [
+          "application/pdf",
+          "application/msword",
+          "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        ],
+      };
+    }
+  }
+
+  return where;
+};
+
+export const buildCMSMediaPaginationParams = (page = "1", limit = "20") => {
+  const pageNum = Math.max(1, Number(page));
+  const limitNum = Math.min(100, Math.max(1, Number(limit)));
+
+  return {
+    skip: (pageNum - 1) * limitNum,
+    take: limitNum,
+  };
+};
+
+export const buildCMSMediaSortParams = (
+  sortBy = "createdAt",
+  order = "desc"
+): Prisma.MediaOrderByWithRelationInput => {
+  const validSortFields = ["createdAt", "fileSize"];
+  const finalSortBy = validSortFields.includes(sortBy) ? sortBy : "createdAt";
+
+  return {
+    [finalSortBy]: order === "asc" ? "asc" : "desc",
+  };
+};

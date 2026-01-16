@@ -12,19 +12,19 @@ const router = express.Router();
 
 router.use(authMiddleware);
 
-router.get("/tags", adminOnly, getTags);
+router.get("/article-tags", adminOnly, getTags);
 
-router.post("/tags", adminOnly, createTag);
+router.post("/article-tags", adminOnly, createTag);
 
-router.put("/tags/:id", adminOnly, updateTag);
+router.put("/article-tags/:id", adminOnly, updateTag);
 
-router.delete("/tags/:id", adminOnly, deleteTag);
+router.delete("/article-tags/:id", adminOnly, deleteTag);
 
 export default router;
 
 /**
  * @swagger
- * /api/cms/tags:
+ * /api/cms/article-tags:
  *   get:
  *     summary: Get all tags
  *     tags: [Articles - Tags]
@@ -45,7 +45,7 @@ export default router;
 
 /**
  * @swagger
- * /api/cms/tags:
+ * /api/cms/article-tags:
  *   post:
  *     summary: Create a new tag
  *     tags: [Articles - Tags]
@@ -66,7 +66,7 @@ export default router;
 
 /**
  * @swagger
- * /api/cms/tags/{id}:
+ * /api/cms/article-tags/{id}:
  *   put:
  *     summary: Update a tag by ID
  *     tags: [Articles - Tags]
@@ -95,7 +95,7 @@ export default router;
 
 /**
  * @swagger
- * /api/cms/tags/{id}:
+ * /api/cms/article-tags/{id}:
  *   delete:
  *     summary: Delete a tag by ID
  *     tags: [Articles - Tags]

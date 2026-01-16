@@ -48,15 +48,15 @@ components:
         - description
         - imageId
       properties:
-        imageId:
-          type: string
-          description: ID of existing media to use as banner
         title:
           type: string
           description: Title of the banner
         description:
           type: string
           description: Description of the banner
+        imageId:
+          type: string
+          description: ID of existing media to use as banner
         linkImage:
           type: string
           description: Optional link when banner is clicked
@@ -79,15 +79,15 @@ components:
     UpdateBanner:
       type: object
       properties:
-        imageId:
-          type: string
-          description: ID of existing media to use as banner
         title:
           type: string
           description: Title of the banner
         description:
           type: string
           description: Description of the banner
+        imageId:
+          type: string
+          description: ID of existing media to use as banner
         linkImage:
           type: string
           description: Optional link when banner is clicked

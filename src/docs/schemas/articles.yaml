@@ -354,10 +354,13 @@ components:
         categoryId:
           type: string
           format: uuid
-          description: "Category UUID - Get list from GET /api/cms/categories"
+          example: "category-uuid-here"
+          description: Category ID
         tags:
           type: string
-          description: "JSON string array of tag UUIDs - Get list from GET /api/cms/tags"
+          example: '["tag-uuid-1", "tag-uuid-2"]'
+          description: JSON string array of tag IDs
         seoKeywords:
           type: string
-          description: "JSON string array of SEO keywords with order"
+          example: '[{"keyword": "typescript", "order": 0}]'
+          description: JSON string array of SEO keywords

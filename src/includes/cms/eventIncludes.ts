@@ -11,7 +11,7 @@ export const eventInclude = {
     },
   },
   images: {
-    orderBy: [{ order: "asc" as Prisma.SortOrder }], // <-- pakai array + as Prisma.SortOrder
+    orderBy: [{ order: "asc" as Prisma.SortOrder }],
     include: { media: true },
   },
   creator: { select: { id: true, name: true, username: true } },

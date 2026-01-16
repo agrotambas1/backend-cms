@@ -1,23 +1,72 @@
 import { Request, Response } from "express";
 import { prisma } from "../../../config/db";
 import fs from "fs";
+import {
+  buildCMSMediaPaginationParams,
+  buildCMSMediaSortParams,
+  buildCMSMediaWhereCondition,
+} from "../../../utils/queryBuilder/cms/media/media";
+
+// export const getMedia = async (req: Request, res: Response) => {
+//   try {
+//     const mediaItems = await prisma.media.findMany({
+//       where: {
+//         deletedAt: null,
+//       },
+//       orderBy: {
+//         createdAt: "desc",
+//       },
+//     });
+
+//     if (!req.user?.id) {
+//       return res.status(401).json({ message: "Unauthorized" });
+//     }
+
+//     res.json(mediaItems);
+//   } catch (error) {
+//     console.error("Error fetching media:", error);
+//     res.status(500).json({ message: "Failed to fetch media" });
+//   }
+// };
 
 export const getMedia = async (req: Request, res: Response) => {
   try {
-    const mediaItems = await prisma.media.findMany({
-      where: {
-        deletedAt: null,
-      },
-      orderBy: {
-        createdAt: "desc",
-      },
-    });
-
     if (!req.user?.id) {
       return res.status(401).json({ message: "Unauthorized" });
     }
 
-    res.json(mediaItems);
+    const { page = "1", limit = "20", search, type, sortBy, order } = req.query;
+
+    const where = buildCMSMediaWhereCondition({
+      search: search as string,
+      type: type as string,
+    });
+
+    const pagination = buildCMSMediaPaginationParams(
+      page as string,
+      limit as string
+    );
+
+    const orderBy = buildCMSMediaSortParams(sortBy as string, order as string);
+
+    const [mediaItems, total] = await Promise.all([
+      prisma.media.findMany({
+        where,
+        orderBy,
+        ...pagination,
+      }),
+      prisma.media.count({ where }),
+    ]);
+
+    return res.status(200).json({
+      data: mediaItems,
+      meta: {
+        total,
+        page: Number(page),
+        limit: Number(limit),
+        totalPages: Math.ceil(total / Number(limit)),
+      },
+    });
   } catch (error) {
     console.error("Error fetching media:", error);
     res.status(500).json({ message: "Failed to fetch media" });

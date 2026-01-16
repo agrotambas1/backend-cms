@@ -1,5 +1,26 @@
 import { Request, Response } from "express";
 import { prisma } from "../../../config/db";
+import {
+  buildCMSArticleTagPaginationParams,
+  buildCMSArticleTagSortParams,
+  buildCMSArticleTagWhereCondition,
+} from "../../../utils/queryBuilder/cms/article/tags";
+
+// export const getTags = async (req: Request, res: Response) => {
+//   try {
+//     if (!req.user?.id) {
+//       return res.status(401).json({ message: "Unauthorized" });
+//     }
+
+//     const tags = await prisma.articleTag.findMany({
+//       where: { deletedAt: null },
+//       orderBy: { createdAt: "desc" },
+//     });
+//     return res.status(200).json(tags);
+//   } catch (error) {
+//     console.error("Error fetching Tags:", error);
+//   }
+// };
 
 export const getTags = async (req: Request, res: Response) => {
   try {
@@ -7,13 +28,51 @@ export const getTags = async (req: Request, res: Response) => {
       return res.status(401).json({ message: "Unauthorized" });
     }
 
-    const tags = await prisma.tag.findMany({
-      where: { deletedAt: null },
-      orderBy: { createdAt: "desc" },
+    const {
+      page = "1",
+      limit = "10",
+      search,
+      isActive,
+      sortBy,
+      order,
+    } = req.query;
+
+    const where = buildCMSArticleTagWhereCondition({
+      search: search as string,
+      isActive: isActive as string,
     });
-    return res.status(200).json(tags);
+
+    const pagination = buildCMSArticleTagPaginationParams(
+      page as string,
+      limit as string
+    );
+
+    const orderBy = buildCMSArticleTagSortParams(
+      sortBy as string,
+      order as string
+    );
+
+    const [tags, total] = await Promise.all([
+      prisma.articleTag.findMany({
+        where,
+        orderBy,
+        ...pagination,
+      }),
+      prisma.articleTag.count({ where }),
+    ]);
+
+    return res.status(200).json({
+      data: tags,
+      meta: {
+        total,
+        page: Number(page),
+        limit: Number(limit),
+        totalPages: Math.ceil(total / Number(limit)),
+      },
+    });
   } catch (error) {
     console.error("Error fetching Tags:", error);
+    res.status(500).json({ message: "Failed to fetch tags" });
   }
 };
 
@@ -39,7 +98,7 @@ export const createTag = async (req: Request, res: Response) => {
 
     const slug = generateSlug(name);
 
-    const exisiting = await prisma.tag.findFirst({
+    const exisiting = await prisma.articleTag.findFirst({
       where: {
         slug,
         deletedAt: null,
@@ -52,7 +111,7 @@ export const createTag = async (req: Request, res: Response) => {
       });
     }
 
-    const tag = await prisma.tag.create({
+    const tag = await prisma.articleTag.create({
       data: {
         name,
         slug,
@@ -98,12 +157,17 @@ export const updateTag = async (req: Request, res: Response) => {
 
     const slug = generateSlug(name);
 
-    const existing = await prisma.tag.findFirst({
+    const existing = await prisma.articleTag.findFirst({
       where: {
         slug,
+        deletedAt: null,
         NOT: { id },
       },
     });
+
+    if (!existing) {
+      return res.status(404).json({ message: "Tag not found" });
+    }
 
     if (existing) {
       return res.status(409).json({
@@ -111,7 +175,7 @@ export const updateTag = async (req: Request, res: Response) => {
       });
     }
 
-    const tag = await prisma.tag.update({
+    const tag = await prisma.articleTag.update({
       where: { id },
       data: {
         name,
@@ -152,7 +216,7 @@ export const deleteTag = async (req: Request, res: Response) => {
       return res.status(400).json({ message: "Tag ID is required" });
     }
 
-    const tag = await prisma.tag.findUnique({
+    const tag = await prisma.articleTag.findUnique({
       where: { id },
     });
 
@@ -160,7 +224,7 @@ export const deleteTag = async (req: Request, res: Response) => {
       return res.status(404).json({ message: "Tag not found" });
     }
 
-    await prisma.tag.update({
+    await prisma.articleTag.update({
       where: { id },
       data: {
         deletedAt: new Date(),

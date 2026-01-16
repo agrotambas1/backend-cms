@@ -2,7 +2,7 @@ import express from "express";
 import {
   getMedia,
   getMediaById,
-} from "../../controllers/public/mediaControllerPublic";
+} from "../../../controllers/public/media/mediaControllerPublic";
 
 const router = express.Router();
 
@@ -11,7 +11,7 @@ const router = express.Router();
  * /api/public/media:
  *   get:
  *     summary: Get all public media items
- *     tags: [Media]
+ *     tags: [Media - Public]
  *     responses:
  *       200:
  *         description: A list of media items
@@ -31,7 +31,7 @@ router.get("/media", getMedia);
  * /api/public/media/{id}:
  *   get:
  *     summary: Get public media by ID
- *     tags: [Media]
+ *     tags: [Media - Public]
  *     parameters:
  *       - in: path
  *         name: id

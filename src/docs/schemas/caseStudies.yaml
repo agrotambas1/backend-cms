@@ -1,0 +1,381 @@
+components:
+  schemas:
+    CaseStudiesCategory:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        slug:
+          type: string
+        description:
+          type: string
+          nullable: true
+        isActive:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        deletedAt:
+          type: string
+          format: date-time
+          nullable: true
+        required:
+          - id
+          - name
+
+    CreateCaseStudyCategory:
+      type: object
+      properties:
+        name:
+          type: string
+          description: "Category name"
+        description:
+          type: string
+          nullable: true
+          description: "Category description (optional)"
+        icon:
+          type: string
+          nullable: true
+          description: "Category icon (optional)"
+        order:
+          type: integer
+          nullable: true
+          description: "Category order (optional)"
+      required:
+        - name
+
+    UpdateCaseStudyCategory:
+      type: object
+      properties:
+        name:
+          type: string
+          description: "Category name"
+        description:
+          type: string
+          nullable: true
+          description: "Category description (optional)"
+        icon:
+          type: string
+          nullable: true
+          description: "Category icon (optional)"
+        order:
+          type: integer
+          nullable: true
+          description: "Category order (optional)"
+        isActive:
+          type: boolean
+          nullable: true
+          description: "Category status (optional)"
+
+    CaseStudiesTechnology:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        slug:
+          type: string
+        icon:
+          type: string
+          nullable: true
+        color:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        deletedAt:
+          type: string
+          format: date-time
+          nullable: true
+
+    CreateCaseStudyTechnology:
+      type: object
+      properties:
+        name:
+          type: string
+          description: "Technology name"
+        icon:
+          type: string
+          nullable: true
+          description: "Technology icon (optional)"
+        color:
+          type: string
+          nullable: true
+          description: "Technology description (optional)"
+      required:
+        - name
+
+    UpdateCaseStudyTechnology:
+      type: object
+      properties:
+        name:
+          type: string
+          description: "Technology name"
+        icon:
+          type: string
+          nullable: true
+          description: "Technology icon (optional)"
+        color:
+          type: string
+          nullable: true
+          description: "Technology description (optional)"
+
+    CaseStudy:
+      type: object
+      required:
+        - id
+        - title
+        - slug
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        slug:
+          type: string
+        description:
+          type: string
+          nullable: true
+        content:
+          type: string
+          nullable: true
+        client:
+          type: string
+          nullable: true
+        projectUrl:
+          type: string
+          nullable: true
+        demoUrl:
+          type: string
+          nullable: true
+        duration:
+          type: string
+          nullable: true
+        year:
+          type: integer
+          nullable: true
+        status:
+          type: string
+          enum: [draft, published, scheduled, archived]
+        publishedAt:
+          type: string
+          format: date-time
+          nullable: true
+        isFeatured:
+          type: boolean
+        order:
+          type: integer
+        thumbnailMedia:
+          type: object
+          nullable: true
+          properties:
+            id:
+              type: string
+              format: uuid
+            fileName:
+              type: string
+            filePath:
+              type: string
+            altText:
+              type: string
+              nullable: true
+            url:
+              type: string
+        category:
+          type: object
+          nullable: true
+          properties:
+            id:
+              type: string
+              format: uuid
+            name:
+              type: string
+            slug:
+              type: string
+            icon:
+              type: string
+              nullable: true
+        technologies:
+          type: string
+          example: '["technology-uuid-1", "technology-uuid-2"]'
+          description: JSON string array of technology IDs
+        images:
+          type: string
+          example: '["image-uuid-1", "image-uuid-2"]'
+          description: JSON string array of image IDs
+        creator:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+            name:
+              type: string
+        updater:
+          type: object
+          nullable: true
+          properties:
+            id:
+              type: string
+              format: uuid
+            name:
+              type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+          nullable: true
+
+    CreateCaseStudy:
+      type: object
+      required:
+        - title
+        - slug
+        - description
+        - content
+        - client
+        - status
+      properties:
+        title:
+          type: string
+          description: "Case study title"
+        slug:
+          type: string
+          description: "URL-friendly slug (must be unique)"
+        description:
+          type: string
+          description: "Short description of the case study"
+        content:
+          type: string
+          description: "Full case study content (supports HTML/Markdown)"
+        client:
+          type: string
+          description: "Client name"
+        projectUrl:
+          type: string
+          nullable: true
+          description: "Live project URL"
+        demoUrl:
+          type: string
+          nullable: true
+          description: "Demo URL"
+        duration:
+          type: string
+          description: "Project duration"
+        year:
+          type: integer
+          description: "Project year"
+        thumbnailId:
+          type: string
+          format: uuid
+          nullable: true
+          description: "Media ID for thumbnail image"
+        status:
+          type: string
+          enum: [draft, published, scheduled, archived]
+          description: "Publication status"
+        publishedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: "Publication date (ISO 8601 format)"
+        isFeatured:
+          type: boolean
+          nullable: true
+          description: "Whether the case study is featured"
+        order:
+          type: integer
+          nullable: true
+          description: "Display order (higher = shown first)"
+        categoryId:
+          type: string
+          format: uuid
+          nullable: true
+          description: "Category ID (optional)"
+        technologies:
+          type: string
+          example: '["technology-uuid-1", "technology-uuid-2"]'
+          description: JSON string array of technology IDs
+        images:
+          type: string
+          description: 'JSON string array of gallery images, contoh: ''[{"imageId":"media-uuid-1","order":0},{"imageId":"media-uuid-2","order":1}]'''
+          example: '[{"imageId":"media-uuid-1","order":0},{"imageId":"media-uuid-2","order":1}]'
+
+    UpdateCaseStudy:
+      type: object
+      properties:
+        title:
+          type: string
+          description: "Case study title"
+        slug:
+          type: string
+          description: "URL-friendly slug (must be unique)"
+        description:
+          type: string
+          description: "Short description of the case study"
+        content:
+          type: string
+          description: "Full case study content (supports HTML/Markdown)"
+        client:
+          type: string
+          description: "Client name"
+        projectUrl:
+          type: string
+          nullable: true
+          description: "Live project URL"
+        demoUrl:
+          type: string
+          nullable: true
+          description: "Demo URL"
+        duration:
+          type: string
+          description: "Project duration"
+        year:
+          type: integer
+          description: "Project year"
+        thumbnailId:
+          type: string
+          format: uuid
+          nullable: true
+          description: "Media ID for thumbnail image"
+        status:
+          type: string
+          enum: [draft, published, scheduled, archived]
+          description: "Publication status"
+        publishedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: "Publication date (ISO 8601 format)"
+        isFeatured:
+          type: boolean
+          nullable: true
+          description: "Whether the case study is featured"
+        order:
+          type: integer
+          nullable: true
+          description: "Display order (higher = shown first)"
+        categoryId:
+          type: string
+          format: uuid
+          nullable: true
+          description: "Category ID (optional)"
+        technologies:
+          type: string
+          example: '["technology-uuid-1", "technology-uuid-2"]'
+          description: JSON string array of technology IDs
+        images:
+          type: string
+          description: 'JSON string array of gallery images, contoh: ''[{"imageId":"media-uuid-1","order":0},{"imageId":"media-uuid-2","order":1}]'''
+          example: '[{"imageId":"media-uuid-1","order":0},{"imageId":"media-uuid-2","order":1}]'

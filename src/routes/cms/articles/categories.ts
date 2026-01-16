@@ -13,19 +13,19 @@ const router = express.Router();
 
 router.use(authMiddleware);
 
-router.get("/categories", adminOnly, getCategories);
+router.get("/article-categories", adminOnly, getCategories);
 
-router.post("/categories", adminOnly, createCategory);
+router.post("/article-categories", adminOnly, createCategory);
 
-router.put("/categories/:id", adminOnly, updateCategory);
+router.put("/article-categories/:id", adminOnly, updateCategory);
 
-router.delete("/categories/:id", adminOnly, deleteCategory);
+router.delete("/article-categories/:id", adminOnly, deleteCategory);
 
 export default router;
 
 /**
  * @swagger
- * /api/cms/categories:
+ * /api/cms/article-categories:
  *     get:
  *       summary: Get all categories
  *       tags: [Articles - Categories]
@@ -46,7 +46,7 @@ export default router;
 
 /**
  * @swagger
- * /api/cms/categories:
+ * /api/cms/article-categories:
  *   post:
  *      summary: Create a new category
  *      tags: [Articles - Categories]
@@ -67,7 +67,7 @@ export default router;
 
 /**
  * @swagger
- * /api/cms/categories/{id}:
+ * /api/cms/article-categories/{id}:
  *   put:
  *      summary: Update category by ID
  *      tags: [Articles - Categories]
@@ -96,7 +96,7 @@ export default router;
 
 /**
  * @swagger
- * /api/cms/categories/{id}:
+ * /api/cms/article-categories/{id}:
  *   delete:
  *      summary: Delete category by ID
  *      tags: [Articles - Categories]

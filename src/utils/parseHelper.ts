@@ -45,35 +45,61 @@ export type ParsedGalleryItem = {
 
 export const parseGallery = (gallery: any): ParsedGalleryItem[] => {
   try {
-    if (!gallery) return [];
-
     if (typeof gallery === "string") {
-      const trimmed = gallery.trim();
-
-      if (trimmed.startsWith("[")) {
-        const parsed = JSON.parse(trimmed);
-        if (!Array.isArray(parsed)) throw new Error();
-        return parsed.map((item, index) => ({
-          mediaId: item.mediaId,
-          order: typeof item.order === "number" ? item.order : index,
-        }));
+      if (gallery.trim().startsWith("[")) {
+        return JSON.parse(gallery);
+      } else if (gallery.trim().length > 0) {
+        return [{ mediaId: gallery.trim(), order: 0 }];
       }
-
-      return trimmed
-        .split(",")
-        .map((id, index) => ({ mediaId: id.trim(), order: index }))
-        .filter((item) => item.mediaId.length > 0);
+      return [];
+    } else if (Array.isArray(gallery)) {
+      return gallery;
     }
-
-    if (Array.isArray(gallery)) {
-      return gallery.map((item, index) => ({
-        mediaId: item.mediaId,
-        order: typeof item.order === "number" ? item.order : index,
-      }));
-    }
-
     return [];
-  } catch {
+  } catch (e) {
     throw new Error("Invalid gallery format");
+  }
+};
+
+export const parseTechnologies = (technologies: any): string[] => {
+  try {
+    if (typeof technologies === "string") {
+      if (technologies.trim().startsWith("[")) {
+        return JSON.parse(technologies);
+      } else {
+        return technologies
+          .split(",")
+          .map((t) => t.trim())
+          .filter((t) => t.length > 0);
+      }
+    } else if (Array.isArray(technologies)) {
+      return technologies;
+    }
+    return [];
+  } catch (e) {
+    throw new Error("Invalid technologies format");
+  }
+};
+
+export type ParsedCaseStudyImage = {
+  imageId: string;
+  order?: number;
+};
+
+export const parseCaseStudyImages = (images: any): ParsedCaseStudyImage[] => {
+  try {
+    if (typeof images === "string") {
+      if (images.trim().startsWith("[")) {
+        return JSON.parse(images);
+      } else if (images.trim().length > 0) {
+        return [{ imageId: images.trim(), order: 0 }];
+      }
+      return [];
+    } else if (Array.isArray(images)) {
+      return images;
+    }
+    return [];
+  } catch (e) {
+    throw new Error("Invalid case study images format");
   }
 };
