@@ -44,12 +44,12 @@ export const getTags = async (req: Request, res: Response) => {
 
     const pagination = buildCMSArticleTagPaginationParams(
       page as string,
-      limit as string
+      limit as string,
     );
 
     const orderBy = buildCMSArticleTagSortParams(
       sortBy as string,
-      order as string
+      order as string,
     );
 
     const [tags, total] = await Promise.all([
@@ -164,10 +164,6 @@ export const updateTag = async (req: Request, res: Response) => {
         NOT: { id },
       },
     });
-
-    if (!existing) {
-      return res.status(404).json({ message: "Tag not found" });
-    }
 
     if (existing) {
       return res.status(409).json({

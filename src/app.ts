@@ -1,10 +1,11 @@
 import express from "express";
 import cors from "cors";
-import Api from "./routes/api";
 import { config } from "dotenv";
-import { connectDB, disconnectDB } from "./config/db";
 import swaggerUi from "swagger-ui-express";
 import { swaggerSpec } from "./config/swagger";
+
+// routes
+import Api from "./routes/api";
 import auth from "./routes/cms/auth/auth";
 import media from "./routes/cms/media/media";
 import user from "./routes/cms/users/users";
@@ -25,14 +26,17 @@ import eventPublic from "./routes/public/event/event";
 import caseStudiesPublic from "./routes/public/caseStudies/caseStudyPublic";
 import caseStudiesCategoriesPublic from "./routes/public/caseStudies/categoryPublic";
 import caseStudiesTechnologiesPublic from "./routes/public/caseStudies/technologyPublic";
+import dotenv from "dotenv";
 
-config();
-connectDB();
+dotenv.config({
+  path: process.env.NODE_ENV === "test" ? ".env.test" : ".env",
+  override: true,
+});
 
 const app = express();
-
 const PORT = process.env.PORT || 3001;
 
+// CORS
 const cmsOrigins = [
   process.env.CMS_FRONTEND_URL || "http://localhost:3005",
   process.env.CMS_FRONTEND_PROD_URL,
@@ -45,38 +49,23 @@ const publicOrigins = [
 ].filter(Boolean);
 
 const cmsCors = cors({
-  origin: function (origin, callback) {
+  origin(origin, callback) {
     if (!origin) return callback(null, true);
-
-    if (cmsOrigins.indexOf(origin) !== -1) {
-      callback(null, true);
-    } else {
-      callback(new Error("Not allowed by CORS"));
-    }
+    if (cmsOrigins.includes(origin)) return callback(null, true);
+    callback(new Error("Not allowed by CORS"));
   },
   credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
-  exposedHeaders: ["Content-Range", "X-Content-Range"],
-  maxAge: 86400,
 });
 
 const publicCors = cors({
-  origin: function (origin, callback) {
+  origin(origin, callback) {
     if (!origin) return callback(null, true);
-
-    if (publicOrigins.indexOf(origin) !== -1) {
-      callback(null, true);
-    } else {
-      callback(new Error("Not allowed by CORS"));
-    }
+    if (publicOrigins.includes(origin)) return callback(null, true);
+    callback(new Error("Not allowed by CORS"));
   },
-  credentials: false,
-  methods: ["GET", "OPTIONS"],
-  allowedHeaders: ["Content-Type"],
-  maxAge: 86400,
 });
 
+// Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -86,7 +75,7 @@ app.use(
   swaggerUi.setup(swaggerSpec, {
     customSiteTitle: "API Documentation",
     customCss: ".swagger-ui .topbar { display: none }",
-  })
+  }),
 );
 
 // CMS
@@ -113,26 +102,4 @@ app.use("/api/public", publicCors, caseStudiesPublic);
 app.use("/api/public", publicCors, caseStudiesCategoriesPublic);
 app.use("/api/public", publicCors, caseStudiesTechnologiesPublic);
 
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-  console.log(`API docs available at http://localhost:${PORT}/api-docs/cms`);
-  console.log(`CMS allowed origins: ${cmsOrigins.join(", ")}`);
-  console.log(`Public allowed origins: ${publicOrigins.join(", ")}`);
-});
-
-process.on("unhandledRejection", (error) => {
-  console.error(error);
-  disconnectDB();
-  process.exit(1);
-});
-
-process.on("uncaughtException", (error) => {
-  console.error(error);
-  disconnectDB();
-  process.exit(1);
-});
-
-process.on("SIGTERM", () => {
-  disconnectDB();
-  process.exit(0);
-});
+export default app;
