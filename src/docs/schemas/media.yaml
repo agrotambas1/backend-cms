@@ -7,6 +7,13 @@ components:
           type: string
           format: uuid
           description: Media ID
+        title:
+          type: string
+          description: Media title
+        description:
+          type: string
+          nullable: true
+          description: Media description
         fileName:
           type: string
           description: Media file name
@@ -51,9 +58,3 @@ components:
           format: date-time
           nullable: true
           description: Deletion timestamp
-
-  # securitySchemes:
-  #   bearerAuth:
-  #     type: http
-  #     scheme: bearer
-  #     bearerFormat: JWT

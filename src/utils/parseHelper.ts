@@ -19,7 +19,7 @@ export const parseTags = (tags: any): string[] => {
 };
 
 export const parseSeoKeywords = (
-  seoKeywords: any
+  seoKeywords: any,
 ): { keyword: string; order?: number }[] => {
   try {
     if (typeof seoKeywords === "string") {
@@ -78,6 +78,66 @@ export const parseTechnologies = (technologies: any): string[] => {
     return [];
   } catch (e) {
     throw new Error("Invalid technologies format");
+  }
+};
+
+export const parseSolutions = (solutions: any): string[] => {
+  try {
+    if (typeof solutions === "string") {
+      if (solutions.trim().startsWith("[")) {
+        return JSON.parse(solutions);
+      } else {
+        return solutions
+          .split(",")
+          .map((s) => s.trim())
+          .filter((s) => s.length > 0);
+      }
+    } else if (Array.isArray(solutions)) {
+      return solutions;
+    }
+    return [];
+  } catch (e) {
+    throw new Error("Invalid solutions format");
+  }
+};
+
+export const parseIndustries = (industries: any): string[] => {
+  try {
+    if (typeof industries === "string") {
+      if (industries.trim().startsWith("[")) {
+        return JSON.parse(industries);
+      } else {
+        return industries
+          .split(",")
+          .map((i) => i.trim())
+          .filter((i) => i.length > 0);
+      }
+    } else if (Array.isArray(industries)) {
+      return industries;
+    }
+    return [];
+  } catch (e) {
+    throw new Error("Invalid industries format");
+  }
+};
+
+export const parseCapabilities = (capabilities: any): string[] => {
+  try {
+    if (typeof capabilities === "string") {
+      if (capabilities.trim().startsWith("[")) {
+        return JSON.parse(capabilities);
+      } else {
+        return capabilities
+          .split(",")
+          .map((c) => c.trim())
+          .filter((c) => c.length > 0);
+      }
+    } else if (Array.isArray(capabilities)) {
+      return capabilities;
+    }
+    return [];
+  } catch (e) {
+    throw new Error("Invalid capabilities format");
   }
 };
 

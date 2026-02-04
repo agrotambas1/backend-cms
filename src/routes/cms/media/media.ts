@@ -1,6 +1,8 @@
 import express from "express";
 import {
+  bulkDeleteMedia,
   deleteMedia,
+  downloadMedia,
   getMedia,
   getMediaById,
   updateMedia,
@@ -8,7 +10,7 @@ import {
 } from "../../../controllers/cms/media/mediaController";
 import { uploadMedia as uploadMiddleware } from "../../../middleware/upload";
 import { authMiddleware } from "../../../middleware/authMiddleware";
-import { editorsOnly } from "../../../middleware/permission";
+import { adminOnly, editorsOnly } from "../../../middleware/permission";
 
 const router = express.Router();
 
@@ -18,14 +20,20 @@ router.get("/media", getMedia);
 
 router.get("/media/:id", getMediaById);
 
+router.get("/media/download/:id", downloadMedia);
+
 router.post(
   "/media",
   uploadMiddleware.single("file"),
   editorsOnly,
-  uploadMedia
+  uploadMedia,
 );
 
-router.delete("/media/:id", editorsOnly, deleteMedia);
+router.put("/media/:id", editorsOnly, updateMedia);
+
+router.delete("/media/:id", adminOnly, deleteMedia);
+
+router.delete("/media", adminOnly, bulkDeleteMedia);
 
 export default router;
 
@@ -92,6 +100,12 @@ export default router;
  *                 type: string
  *                 format: binary
  *                 description: Media file to upload (max 10MB)
+ *               title:
+ *                 type: string
+ *                 description: Title for the media
+ *               description:
+ *                 type: string
+ *                 description: Description for the media
  *               alt_text:
  *                 type: string
  *                 description: Alternative text for accessibility
@@ -116,6 +130,95 @@ export default router;
 /**
  * @swagger
  * /api/cms/media/{id}:
+ *   put:
+ *     summary: Update media metadata
+ *     description: Update alternative text and caption for existing media
+ *     tags: [Media]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Media ID
+ *         example: 550e8400-e29b-41d4-a716-446655440000
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               title:
+ *                 type: string
+ *                 description: Title for the media
+ *                 example: Sunset at the beach
+ *               description:
+ *                 type: string
+ *                 description: Description for the media
+ *                 example: Captured during our trip to Bali
+ *               altText:
+ *                 type: string
+ *                 description: Alternative text for accessibility
+ *                 example: Beautiful sunset at the beach
+ *               caption:
+ *                 type: string
+ *                 description: Caption for the media
+ *                 example: Captured during our trip to Bali
+ *           examples:
+ *             updateBoth:
+ *               summary: Update both altText and caption
+ *               value:
+ *                 altText: Beautiful mountain landscape
+ *                 caption: Taken at Mount Bromo, East Java
+ *             updateAltTextOnly:
+ *               summary: Update altText only
+ *               value:
+ *                 altText: Team meeting photo
+ *             updateCaptionOnly:
+ *               summary: Update caption only
+ *               value:
+ *                 caption: Annual company gathering 2026
+ *     responses:
+ *       200:
+ *         description: Media metadata updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: success
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     media:
+ *                       $ref: '#/components/schemas/Media'
+ *       400:
+ *         description: No data to update or invalid media ID
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: No data to update. Provide altText or caption.
+ *       401:
+ *         description: Unauthorized - Authentication required
+ *       404:
+ *         description: Media not found
+ *       500:
+ *         description: Server error
+ */
+
+/**
+ * @swagger
+ * /api/cms/media/{id}:
  *   delete:
  *     summary: Delete media
  *     tags: [Media]
@@ -130,6 +233,67 @@ export default router;
  *     responses:
  *       200:
  *         description: Media deleted successfully
+ *       404:
+ *         description: Media not found
+ *       500:
+ *         description: Server error
+ */
+
+/**
+ * @swagger
+ * /api/cms/media:
+ *   delete:
+ *     summary: Bulk delete media
+ *     description: Delete multiple media files at once. Only editors or admins can perform this action.
+ *     tags: [Media]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - ids
+ *             properties:
+ *               ids:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                   format: uuid
+ *                 description: Array of media IDs to delete
+ *                 example:
+ *                   - 550e8400-e29b-41d4-a716-446655440000
+ *                   - 660e8400-e29b-41d4-a716-446655440111
+ *     responses:
+ *       200:
+ *         description: Media deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: success
+ *                 message:
+ *                   type: string
+ *                   example: 2 media deleted successfully
+ *       400:
+ *         description: Invalid request body
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Media IDs are required
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - no permission to delete some media
  *       404:
  *         description: Media not found
  *       500:

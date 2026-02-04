@@ -1,6 +1,5 @@
 import express from "express";
 import cors from "cors";
-import Api from "./routes/api";
 import { config } from "dotenv";
 import { connectDB, disconnectDB } from "./config/db";
 import swaggerUi from "swagger-ui-express";
@@ -86,11 +85,10 @@ app.use(
   swaggerUi.setup(swaggerSpec, {
     customSiteTitle: "API Documentation",
     customCss: ".swagger-ui .topbar { display: none }",
-  })
+  }),
 );
 
 // CMS
-app.use("/api/cms", cmsCors, Api);
 app.use("/api/cms", cmsCors, auth);
 app.use("/api/cms", cmsCors, user);
 app.use("/api/cms", cmsCors, media);

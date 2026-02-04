@@ -4,7 +4,6 @@ import { v4 as uuid } from "uuid";
 import { Request } from "express";
 import fs from "fs";
 
-// Allowed MIME types
 const ALLOWED_MIME_TYPES = [
   "image/jpeg",
   "image/jpg",
@@ -44,11 +43,10 @@ const createStorage = (module: string) => {
   });
 };
 
-// File filter
 const fileFilter = (
   _req: Request,
   file: Express.Multer.File,
-  cb: multer.FileFilterCallback
+  cb: multer.FileFilterCallback,
 ) => {
   if (ALLOWED_MIME_TYPES.includes(file.mimetype)) {
     cb(null, true);
@@ -61,13 +59,13 @@ export const createUploadMiddleware = (module: string) => {
   return multer({
     storage: createStorage(module),
     limits: {
-      fileSize: 10 * 1024 * 1024, // 10MB
+      fileSize: 10 * 1024 * 1024,
     },
     fileFilter,
   });
 };
 
-export const uploadArticle = createUploadMiddleware("articles");
+export const uploadInsight = createUploadMiddleware("insights");
 export const uploadEvent = createUploadMiddleware("events");
 export const uploadPortfolio = createUploadMiddleware("portfolios");
 export const uploadMedia = createUploadMiddleware("media");

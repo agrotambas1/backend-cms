@@ -27,7 +27,7 @@ export default router;
  * /api/cms/article-tags:
  *   get:
  *     summary: Get all tags
- *     tags: [Articles - Tags]
+ *     tags: [Insight - Tags]
  *     security:
  *       - bearerAuth: []
  *     responses:
@@ -48,7 +48,7 @@ export default router;
  * /api/cms/article-tags:
  *   post:
  *     summary: Create a new tag
- *     tags: [Articles - Tags]
+ *     tags: [Insight - Tags]
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -69,7 +69,7 @@ export default router;
  * /api/cms/article-tags/{id}:
  *   put:
  *     summary: Update a tag by ID
- *     tags: [Articles - Tags]
+ *     tags: [Insight - Tags]
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -98,7 +98,7 @@ export default router;
  * /api/cms/article-tags/{id}:
  *   delete:
  *     summary: Delete a tag by ID
- *     tags: [Articles - Tags]
+ *     tags: [Insight - Tags]
  *     security:
  *       - bearerAuth: []
  *     parameters:

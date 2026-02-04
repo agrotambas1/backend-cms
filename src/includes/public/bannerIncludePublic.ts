@@ -1,3 +1,5 @@
+import { Prisma } from "@prisma/client";
+
 export const bannerPublicSelect = {
   id: true,
   title: true,
@@ -12,4 +14,4 @@ export const bannerPublicSelect = {
       altText: true,
     },
   },
-};
+} satisfies Prisma.BannerSelect;

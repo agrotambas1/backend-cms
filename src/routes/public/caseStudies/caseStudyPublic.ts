@@ -2,7 +2,7 @@ import express from "express";
 import {
   getPublicCaseStudies,
   getPublicCaseStudyBySlug,
-} from "../../../controllers/public/caseStudies/caseStudiesController";
+} from "../../../controllers/public/caseStudies/caseStudyController";
 
 const router = express.Router();
 

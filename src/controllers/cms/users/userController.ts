@@ -40,7 +40,7 @@ export const getUser = async (req: Request, res: Response) => {
 
     const pagination = buildCMSUserPaginationParams(
       page as string,
-      limit as string
+      limit as string,
     );
 
     const orderBy = buildCMSUserSortParams(sortBy as string, order as string);
@@ -74,7 +74,13 @@ export const getUser = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error("Error fetching users:", error);
-    res.status(500).json({ message: "Failed to fetch users" });
+
+    const message =
+      process.env.NODE_ENV === "production"
+        ? "Failed to fetch users"
+        : (error as Error).message;
+
+    res.status(500).json({ message });
   }
 };
 
@@ -124,8 +130,14 @@ export const registerUser = async (req: Request, res: Response) => {
       },
     });
   } catch (error) {
-    console.error("Error registering user:", error);
-    res.status(500).json({ message: "Failed to register user" });
+    console.error("Error fetching user:", error);
+
+    const message =
+      process.env.NODE_ENV === "production"
+        ? "Failed to fetch user"
+        : (error as Error).message;
+
+    res.status(500).json({ message });
   }
 };
 
@@ -160,7 +172,7 @@ export const updateUser = async (req: Request, res: Response) => {
             { id: { not: id } },
             {
               OR: [username ? { username } : {}, email ? { email } : {}].filter(
-                (obj) => Object.keys(obj).length > 0
+                (obj) => Object.keys(obj).length > 0,
               ),
             },
           ],

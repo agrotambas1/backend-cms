@@ -2,7 +2,7 @@ import express from "express";
 import {
   getPublicTagBySlug,
   getPublicTags,
-} from "../../../controllers/public/article/tagController";
+} from "../../../controllers/public/articles/tagController";
 
 const router = express.Router();
 

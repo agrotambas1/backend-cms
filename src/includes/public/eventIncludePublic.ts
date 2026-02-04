@@ -5,6 +5,40 @@ export const eventPublicSelect = {
   title: true,
   slug: true,
   excerpt: true,
+
+  eventStart: true,
+  eventEnd: true,
+
+  location: true,
+  locationType: true,
+  quota: true,
+
+  status: true,
+  isFeatured: true,
+
+  createdAt: true,
+
+  thumbnailMedia: {
+    select: {
+      id: true,
+      url: true,
+      altText: true,
+    },
+  },
+
+  creator: {
+    select: {
+      id: true,
+      name: true,
+    },
+  },
+} satisfies Prisma.EventSelect;
+
+export const eventPublicDetailSelect = {
+  id: true,
+  title: true,
+  slug: true,
+  excerpt: true,
   content: true,
 
   eventStart: true,
@@ -26,12 +60,14 @@ export const eventPublicSelect = {
       id: true,
       url: true,
       altText: true,
+      width: true,
+      height: true,
     },
   },
 
   images: {
     orderBy: {
-      order: Prisma.SortOrder.asc,
+      order: "asc" as const,
     },
     select: {
       id: true,
@@ -41,6 +77,8 @@ export const eventPublicSelect = {
           id: true,
           url: true,
           altText: true,
+          width: true,
+          height: true,
         },
       },
     },
@@ -52,7 +90,7 @@ export const eventPublicSelect = {
       name: true,
     },
   },
-};
+} satisfies Prisma.EventSelect;
 
 export const transformEventPublic = (event: any) => ({
   ...event,

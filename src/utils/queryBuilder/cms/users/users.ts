@@ -7,7 +7,7 @@ interface CMSUserFilterParams {
 }
 
 export const buildCMSUserWhereCondition = (
-  params: CMSUserFilterParams
+  params: CMSUserFilterParams,
 ): Prisma.UserWhereInput => {
   const where: Prisma.UserWhereInput = {
     deletedAt: null,
@@ -44,7 +44,7 @@ export const buildCMSUserPaginationParams = (page = "1", limit = "10") => {
 
 export const buildCMSUserSortParams = (
   sortBy = "createdAt",
-  order = "desc"
+  order = "desc",
 ): Prisma.UserOrderByWithRelationInput => {
   const validSortFields = ["createdAt", "name", "username", "email", "role"];
   const finalSortBy = validSortFields.includes(sortBy) ? sortBy : "createdAt";

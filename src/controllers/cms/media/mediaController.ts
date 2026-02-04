@@ -6,28 +6,7 @@ import {
   buildCMSMediaSortParams,
   buildCMSMediaWhereCondition,
 } from "../../../utils/queryBuilder/cms/media/media";
-
-// export const getMedia = async (req: Request, res: Response) => {
-//   try {
-//     const mediaItems = await prisma.media.findMany({
-//       where: {
-//         deletedAt: null,
-//       },
-//       orderBy: {
-//         createdAt: "desc",
-//       },
-//     });
-
-//     if (!req.user?.id) {
-//       return res.status(401).json({ message: "Unauthorized" });
-//     }
-
-//     res.json(mediaItems);
-//   } catch (error) {
-//     console.error("Error fetching media:", error);
-//     res.status(500).json({ message: "Failed to fetch media" });
-//   }
-// };
+import path from "path";
 
 export const getMedia = async (req: Request, res: Response) => {
   try {
@@ -44,7 +23,7 @@ export const getMedia = async (req: Request, res: Response) => {
 
     const pagination = buildCMSMediaPaginationParams(
       page as string,
-      limit as string
+      limit as string,
     );
 
     const orderBy = buildCMSMediaSortParams(sortBy as string, order as string);
@@ -69,7 +48,13 @@ export const getMedia = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error("Error fetching media:", error);
-    res.status(500).json({ message: "Failed to fetch media" });
+
+    const message =
+      process.env.NODE_ENV === "production"
+        ? "Failed to fetch media"
+        : (error as Error).message;
+
+    res.status(500).json({ message });
   }
 };
 
@@ -99,7 +84,13 @@ export const getMediaById = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error("Error fetching media:", error);
-    res.status(500).json({ message: "Failed to fetch media" });
+
+    const message =
+      process.env.NODE_ENV === "production"
+        ? "Failed to fetch media"
+        : (error as Error).message;
+
+    res.status(500).json({ message });
   }
 };
 
@@ -114,15 +105,22 @@ export const uploadMedia = async (req: Request, res: Response) => {
     }
 
     const file = req.file;
-    const { alt_text, caption } = req.body;
+    const { title, description, alt_text, caption } = req.body;
+
+    const pathParts = file.path.split(path.sep);
+    const module = pathParts[1];
+    const year = pathParts[2];
+    const month = pathParts[3];
 
     const media = await prisma.media.create({
       data: {
+        title,
+        description,
         fileName: file.filename,
         filePath: file.path,
         mimeType: file.mimetype,
         fileSize: file.size,
-        url: `/uploads/${file.filename}`,
+        url: `/uploads/${module}/${year}/${month}/${file.filename}`,
         altText: alt_text,
         caption: caption,
         createdBy: req.user.id,
@@ -148,9 +146,8 @@ export const updateMedia = async (req: Request, res: Response) => {
       return res.status(401).json({ message: "Unauthorized" });
     }
 
-    const { altText, caption } = req.body;
+    const { title, description, altText, caption } = req.body;
 
-    // Check if media exists
     const mediaExists = await prisma.media.findUnique({
       where: { id },
     });
@@ -159,32 +156,18 @@ export const updateMedia = async (req: Request, res: Response) => {
       return res.status(404).json({ message: "Media not found" });
     }
 
-    // Prepare update data
     const updateData: any = {};
 
-    // Update metadata
+    if (title !== undefined) updateData.title = title;
+    if (description !== undefined) updateData.description = description;
     if (altText !== undefined) updateData.altText = altText;
     if (caption !== undefined) updateData.caption = caption;
 
-    // Jika ada file baru, replace file lama
-    if (req.file) {
-      const file = req.file;
-
-      // Hapus file lama
-      try {
-        if (fs.existsSync(mediaExists.filePath)) {
-          fs.unlinkSync(mediaExists.filePath);
-        }
-      } catch (fileError) {
-        console.error("Error deleting old file:", fileError);
-      }
-
-      // Update dengan file baru
-      updateData.fileName = file.filename;
-      updateData.filePath = file.path;
-      updateData.mimeType = file.mimetype;
-      updateData.fileSize = file.size;
-      updateData.url = `/uploads/${file.filename}`;
+    if (Object.keys(updateData).length === 0) {
+      return res.status(400).json({
+        message:
+          "No data to update. Provide title, description, altText, or caption.",
+      });
     }
 
     const media = await prisma.media.update({
@@ -198,8 +181,44 @@ export const updateMedia = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error("Error updating media:", error);
-    res.status(500).json({ message: "Failed to update media" });
+
+    const message =
+      process.env.NODE_ENV === "production"
+        ? "Failed to update media"
+        : (error as Error).message;
+
+    res.status(500).json({ message });
   }
+};
+
+const checkMediaUsage = async (mediaId: string) => {
+  const [
+    insightThumb,
+    eventThumb,
+    caseStudyThumb,
+    eventImages,
+    caseStudyImages,
+  ] = await Promise.all([
+    prisma.insight.count({ where: { thumbnailId: mediaId } }),
+    prisma.event.count({ where: { thumbnailId: mediaId } }),
+    prisma.caseStudy.count({ where: { thumbnailId: mediaId } }),
+    prisma.eventImage.count({ where: { mediaId: mediaId } }),
+    prisma.caseStudyImage.count({ where: { imageId: mediaId } }),
+  ]);
+
+  return {
+    insightThumb,
+    eventThumb,
+    caseStudyThumb,
+    eventImages,
+    caseStudyImages,
+    total:
+      insightThumb +
+      eventThumb +
+      caseStudyThumb +
+      eventImages +
+      caseStudyImages,
+  };
 };
 
 export const deleteMedia = async (req: Request, res: Response) => {
@@ -210,12 +229,10 @@ export const deleteMedia = async (req: Request, res: Response) => {
       return res.status(400).json({ message: "Media ID is required" });
     }
 
-    // Check authorization
     if (!req.user?.id) {
       return res.status(401).json({ message: "Unauthorized" });
     }
 
-    // Check if media exists
     const mediaExists = await prisma.media.findUnique({
       where: { id },
     });
@@ -230,34 +247,147 @@ export const deleteMedia = async (req: Request, res: Response) => {
       });
     }
 
-    const media = await prisma.media.update({
+    // const media = await prisma.media.update({
+    //   where: { id },
+    //   data: { deletedAt: new Date() },
+    // });
+
+    const usage = await checkMediaUsage(id);
+
+    if (usage.total > 0) {
+      return res.status(400).json({
+        message: "Media masih digunakan",
+        usage,
+      });
+    }
+
+    await prisma.media.delete({
       where: { id },
-      data: { deletedAt: new Date() },
     });
 
-    // Optional: Hard delete + hapus file fisik (uncomment jika mau hard delete)
-    // try {
-    //   // Hapus file fisik dari server
-    //   if (fs.existsSync(mediaExists.filePath)) {
-    //     fs.unlinkSync(mediaExists.filePath);
-    //   }
-    // } catch (fileError) {
-    //   console.error("Error deleting file:", fileError);
-    //   // Tetap lanjut hapus dari database meskipun file gagal dihapus
-    // }
-    //
-    // // Hard delete dari database
-    // await prisma.media.delete({
-    //   where: { id },
-    // });
+    try {
+      if (fs.existsSync(mediaExists.filePath)) {
+        fs.unlinkSync(mediaExists.filePath);
+      }
+    } catch (fileError) {
+      console.error("Error deleting file:", fileError);
+    }
 
     res.json({
       status: "success",
       message: "Media deleted successfully",
-      data: { media },
     });
   } catch (error) {
     console.error("Error deleting media:", error);
     res.status(500).json({ message: "Failed to delete media" });
+  }
+};
+
+export const bulkDeleteMedia = async (req: Request, res: Response) => {
+  try {
+    const { ids } = req.body;
+
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ message: "Media IDs are required" });
+    }
+
+    if (!req.user?.id) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const medias = await prisma.media.findMany({
+      where: { id: { in: ids } },
+    });
+
+    if (medias.length === 0) {
+      return res.status(404).json({ message: "No media found" });
+    }
+
+    const blocked: string[] = [];
+    const deletable: typeof medias = [];
+
+    for (const media of medias) {
+      const usage = await checkMediaUsage(media.id);
+      if (usage.total > 0) {
+        blocked.push(media.id);
+      } else {
+        deletable.push(media);
+      }
+    }
+
+    if (deletable.length === 0) {
+      return res.status(400).json({
+        message: "Semua media masih digunakan",
+        blocked,
+      });
+    }
+
+    await prisma.media.deleteMany({
+      where: {
+        id: { in: deletable.map((m) => m.id) },
+      },
+    });
+
+    for (const media of deletable) {
+      try {
+        if (media.filePath && fs.existsSync(media.filePath)) {
+          fs.unlinkSync(media.filePath);
+        }
+      } catch (err) {
+        console.warn("File delete failed:", media.filePath);
+      }
+    }
+
+    return res.json({
+      status: "success",
+      deleted: deletable.length,
+      blocked,
+    });
+  } catch (error) {
+    console.error("Error bulk deleting media:", error);
+    return res.status(500).json({
+      message: "Failed to bulk delete media",
+    });
+  }
+};
+
+export const downloadMedia = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    if (!id) {
+      return res.status(400).json({ message: "Media ID is required" });
+    }
+
+    const media = await prisma.media.findUnique({
+      where: { id },
+    });
+
+    if (!media) {
+      return res.status(404).json({ message: "Media not found" });
+    }
+
+    if (!fs.existsSync(media.filePath)) {
+      return res.status(404).json({ message: "File not found on server" });
+    }
+
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="${media.fileName}"`,
+    );
+    res.setHeader("Content-Type", media.mimeType);
+    res.setHeader("Content-Length", media.fileSize.toString());
+
+    res.download(media.filePath, media.fileName, (err) => {
+      if (err) {
+        console.error("Download error:", err);
+        if (!res.headersSent) {
+          res.status(500).json({ message: "Failed to download file" });
+        }
+      }
+    });
+  } catch (error) {
+    console.error("Download media error:", error);
+    res.status(500).json({ message: "Failed to download media" });
   }
 };

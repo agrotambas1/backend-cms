@@ -28,7 +28,7 @@ export default router;
  * /api/cms/article-categories:
  *     get:
  *       summary: Get all categories
- *       tags: [Articles - Categories]
+ *       tags: [Insight - Categories]
  *       security:
  *         - bearerAuth: []
  *       responses:
@@ -49,7 +49,7 @@ export default router;
  * /api/cms/article-categories:
  *   post:
  *      summary: Create a new category
- *      tags: [Articles - Categories]
+ *      tags: [Insight - Categories]
  *      security:
  *       - bearerAuth: []
  *      requestBody:
@@ -70,7 +70,7 @@ export default router;
  * /api/cms/article-categories/{id}:
  *   put:
  *      summary: Update category by ID
- *      tags: [Articles - Categories]
+ *      tags: [Insight - Categories]
  *      security:
  *          - bearerAuth: []
  *      parameters:
@@ -99,7 +99,7 @@ export default router;
  * /api/cms/article-categories/{id}:
  *   delete:
  *      summary: Delete category by ID
- *      tags: [Articles - Categories]
+ *      tags: [Insight - Categories]
  *      security:
  *        - bearerAuth: []
  *      parameters:

@@ -18,8 +18,9 @@ export const generateToken = (userId: string, res: Response): string => {
   // Set token in HTTP-only cookie
   res.cookie("token", token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "strict",
+    secure: process.env.NODE_ENV === "production" ? true : false,
+    // sameSite: "strict",
+    sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
     maxAge: 24 * 60 * 60 * 1000,
   });
 

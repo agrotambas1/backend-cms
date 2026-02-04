@@ -6,25 +6,6 @@ import {
   buildCMSCaseStudiesTechnologyWhereCondition,
 } from "../../../utils/queryBuilder/cms/caseStudies/technologies";
 
-// export const getTechnologies = async (req: Request, res: Response) => {
-
-//   try {
-//     if (!req.user?.id) {
-//       return res.status(401).json({ message: "Unauthorized" });
-//     }
-
-//     const technologies = await prisma.caseStudyTechnology.findMany({
-//       where: { deletedAt: null },
-//       orderBy: { createdAt: "desc" },
-//     });
-
-//     return res.status(200).json(technologies);
-//   } catch (error) {
-//     console.error("Error fetching technologies:", error);
-//     res.status(500).json({ message: "Failed to fetch technologies" });
-//   }
-// };
-
 export const getTechnologies = async (req: Request, res: Response) => {
   try {
     if (!req.user?.id) {
@@ -39,12 +20,12 @@ export const getTechnologies = async (req: Request, res: Response) => {
 
     const pagination = buildCMSCaseStudiesTechnologyPaginationParams(
       page as string,
-      limit as string
+      limit as string,
     );
 
     const orderByParams = buildCMSCaseStudiesTechnologySortParams(
       sortBy as string,
-      order as string
+      order as string,
     );
 
     const [technologies, total] = await Promise.all([
@@ -66,8 +47,14 @@ export const getTechnologies = async (req: Request, res: Response) => {
       },
     });
   } catch (error) {
-    console.error("Error fetching technologies:", error);
-    res.status(500).json({ message: "Failed to fetch technologies", error });
+    console.error("Error fetching case study  technologies:", error);
+
+    const message =
+      process.env.NODE_ENV === "production"
+        ? "Failed to fetch case study technologies"
+        : (error as Error).message;
+
+    res.status(500).json({ message });
   }
 };
 
@@ -85,17 +72,18 @@ export const createTechnology = async (req: Request, res: Response) => {
       return res.status(401).json({ message: "Unauthorized" });
     }
 
-    const { name, icon, color } = req.body;
+    const { name, slug, icon, color } = req.body;
 
     if (!name) {
       return res.status(400).json({ message: "Technology name is required" });
     }
 
-    const slug = generateSlug(name);
+    // const slug = generateSlug(name);
+    const finalSlug = slug?.trim() ? slug : generateSlug(name);
 
     const existing = await prisma.caseStudyTechnology.findFirst({
       where: {
-        slug,
+        slug: finalSlug,
         deletedAt: null,
       },
     });
@@ -109,7 +97,7 @@ export const createTechnology = async (req: Request, res: Response) => {
     const technology = await prisma.caseStudyTechnology.create({
       data: {
         name,
-        slug,
+        slug: finalSlug,
         icon,
         color,
       },
@@ -139,7 +127,7 @@ export const updateTechnology = async (req: Request, res: Response) => {
     }
 
     const { id } = req.params;
-    const { name, icon, color } = req.body;
+    const { name, slug, icon, color } = req.body;
 
     if (!id) {
       return res.status(400).json({ message: "Technology ID is required" });
@@ -149,11 +137,12 @@ export const updateTechnology = async (req: Request, res: Response) => {
       return res.status(400).json({ message: "Technology name is required" });
     }
 
-    const slug = generateSlug(name);
+    // const slug = generateSlug(name);
+    const finalSlug = slug?.trim() ? slug : generateSlug(name);
 
     const existing = await prisma.caseStudyTechnology.findFirst({
       where: {
-        slug,
+        slug: finalSlug,
         NOT: { id },
       },
     });
@@ -168,10 +157,9 @@ export const updateTechnology = async (req: Request, res: Response) => {
       where: { id },
       data: {
         name,
-        slug,
+        slug: finalSlug,
         icon,
         color,
-        updatedAt: new Date(),
       },
     });
 

@@ -6,7 +6,7 @@ interface CMSMediaFilterParams {
 }
 
 export const buildCMSMediaWhereCondition = (
-  params: CMSMediaFilterParams
+  params: CMSMediaFilterParams,
 ): Prisma.MediaWhereInput => {
   const where: Prisma.MediaWhereInput = {
     deletedAt: null,
@@ -14,6 +14,8 @@ export const buildCMSMediaWhereCondition = (
 
   if (params.search) {
     where.OR = [
+      { title: { contains: params.search, mode: "insensitive" } },
+      { description: { contains: params.search, mode: "insensitive" } },
       { altText: { contains: params.search, mode: "insensitive" } },
       { caption: { contains: params.search, mode: "insensitive" } },
       { mimeType: { contains: params.search, mode: "insensitive" } },
@@ -55,7 +57,7 @@ export const buildCMSMediaPaginationParams = (page = "1", limit = "20") => {
 
 export const buildCMSMediaSortParams = (
   sortBy = "createdAt",
-  order = "desc"
+  order = "desc",
 ): Prisma.MediaOrderByWithRelationInput => {
   const validSortFields = ["createdAt", "fileSize"];
   const finalSortBy = validSortFields.includes(sortBy) ? sortBy : "createdAt";

@@ -21,19 +21,14 @@ components:
           type: string
           nullable: true
           description: Full event description (HTML)
-        thumbnail:
-          type: string
-          nullable: true
-          description: Thumbnail URL
-        thumbnailAlt:
-          type: string
-          nullable: true
-          description: Thumbnail alt text
         thumbnailId:
           type: string
           format: uuid
           nullable: true
           description: Reference to media table
+        eventType:
+          type: string
+          description: Event Type
         eventStart:
           type: string
           format: date-time
@@ -94,10 +89,10 @@ components:
               type: string
             url:
               type: string
-        images:
-          type: array
-          items:
-            $ref: "#/components/schemas/EventImage"
+        solutions:
+          type: string
+          example: '["solution-uuid-1", "solution-uuid-2"]'
+          description: JSON string array of solution IDs
         creator:
           type: object
           properties:
@@ -151,6 +146,10 @@ components:
           format: uuid
           nullable: true
           description: "UUID media untuk thumbnail utama event"
+        eventType:
+          type: string
+          nullable: true
+          description: "Event Type"
         eventStart:
           type: string
           format: date-time
@@ -187,10 +186,10 @@ components:
           type: boolean
           default: false
           description: "Apakah event ditampilkan sebagai featured"
-        images:
+        solutions:
           type: string
-          description: 'JSON string array of gallery images, contoh: ''[{"mediaId":"media-uuid-1","order":0},{"mediaId":"media-uuid-2","order":1}]'''
-          example: '[{"mediaId":"media-uuid-1","order":0},{"mediaId":"media-uuid-2","order":1}]'
+          example: '["solution-uuid-1", "solution-uuid-2"]'
+          description: JSON string array of solution IDs
 
     UpdateEvent:
       type: object
@@ -214,6 +213,10 @@ components:
           format: uuid
           nullable: true
           description: "UUID media untuk thumbnail utama event (update jika ingin ganti)"
+        eventType:
+          type: string
+          nullable: true
+          description: "Event Type"
         eventStart:
           type: string
           format: date-time
@@ -249,30 +252,7 @@ components:
         isFeatured:
           type: boolean
           description: "Apakah event ditampilkan sebagai featured"
-        images:
+        solutions:
           type: string
-          description: 'JSON string array of gallery images, contoh: ''[{"mediaId":"media-uuid-1","order":0},{"mediaId":"media-uuid-2","order":1}]'''
-          example: '[{"mediaId":"media-uuid-1","order":0},{"mediaId":"media-uuid-2","order":1}]'
-
-    EventImage:
-      type: object
-      required:
-        - id
-        - eventId
-        - mediaId
-      properties:
-        id:
-          type: string
-          format: uuid
-        eventId:
-          type: string
-          format: uuid
-        mediaId:
-          type: string
-          format: uuid
-        order:
-          type: integer
-          default: 0
-        createdAt:
-          type: string
-          format: date-time
+          example: '["solution-uuid-1", "solution-uuid-2"]'
+          description: JSON string array of solution IDs

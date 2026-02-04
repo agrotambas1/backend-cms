@@ -1,133 +1,5 @@
 components:
   schemas:
-    CaseStudiesCategory:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-        name:
-          type: string
-        slug:
-          type: string
-        description:
-          type: string
-          nullable: true
-        isActive:
-          type: boolean
-        createdAt:
-          type: string
-          format: date-time
-        deletedAt:
-          type: string
-          format: date-time
-          nullable: true
-        required:
-          - id
-          - name
-
-    CreateCaseStudyCategory:
-      type: object
-      properties:
-        name:
-          type: string
-          description: "Category name"
-        description:
-          type: string
-          nullable: true
-          description: "Category description (optional)"
-        icon:
-          type: string
-          nullable: true
-          description: "Category icon (optional)"
-        order:
-          type: integer
-          nullable: true
-          description: "Category order (optional)"
-      required:
-        - name
-
-    UpdateCaseStudyCategory:
-      type: object
-      properties:
-        name:
-          type: string
-          description: "Category name"
-        description:
-          type: string
-          nullable: true
-          description: "Category description (optional)"
-        icon:
-          type: string
-          nullable: true
-          description: "Category icon (optional)"
-        order:
-          type: integer
-          nullable: true
-          description: "Category order (optional)"
-        isActive:
-          type: boolean
-          nullable: true
-          description: "Category status (optional)"
-
-    CaseStudiesTechnology:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-        name:
-          type: string
-        slug:
-          type: string
-        icon:
-          type: string
-          nullable: true
-        color:
-          type: boolean
-        createdAt:
-          type: string
-          format: date-time
-        updatedAt:
-          type: string
-          format: date-time
-        deletedAt:
-          type: string
-          format: date-time
-          nullable: true
-
-    CreateCaseStudyTechnology:
-      type: object
-      properties:
-        name:
-          type: string
-          description: "Technology name"
-        icon:
-          type: string
-          nullable: true
-          description: "Technology icon (optional)"
-        color:
-          type: string
-          nullable: true
-          description: "Technology description (optional)"
-      required:
-        - name
-
-    UpdateCaseStudyTechnology:
-      type: object
-      properties:
-        name:
-          type: string
-          description: "Technology name"
-        icon:
-          type: string
-          nullable: true
-          description: "Technology icon (optional)"
-        color:
-          type: string
-          nullable: true
-          description: "Technology description (optional)"
-
     CaseStudy:
       type: object
       required:
@@ -166,6 +38,14 @@ components:
         status:
           type: string
           enum: [draft, published, scheduled, archived]
+        metaTitle:
+          type: string
+          nullable: true
+          description: SEO meta title
+        metaDescription:
+          type: string
+          nullable: true
+          description: SEO meta description
         publishedAt:
           type: string
           format: date-time
@@ -190,28 +70,18 @@ components:
               nullable: true
             url:
               type: string
-        category:
-          type: object
-          nullable: true
-          properties:
-            id:
-              type: string
-              format: uuid
-            name:
-              type: string
-            slug:
-              type: string
-            icon:
-              type: string
-              nullable: true
-        technologies:
+        solutions:
           type: string
-          example: '["technology-uuid-1", "technology-uuid-2"]'
-          description: JSON string array of technology IDs
-        images:
+          example: '["solution-uuid-1", "solution-uuid-2"]'
+          description: JSON string array of solution IDs
+        industries:
           type: string
-          example: '["image-uuid-1", "image-uuid-2"]'
-          description: JSON string array of image IDs
+          example: '["industry-uuid-1", "industry-uuid-2"]'
+          description: JSON string array of industry IDs
+        capabilities:
+          type: string
+          example: '["capability-uuid-1", "capability-uuid-2"]'
+          description: JSON string array of capability IDs
         creator:
           type: object
           properties:
@@ -229,6 +99,17 @@ components:
               format: uuid
             name:
               type: string
+        seoKeywords:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              keyword:
+                type: string
+              order:
+                type: integer
         createdAt:
           type: string
           format: date-time
@@ -285,6 +166,16 @@ components:
           type: string
           enum: [draft, published, scheduled, archived]
           description: "Publication status"
+        metaTitle:
+          type: string
+          nullable: true
+          example: "SEO Title"
+          description: SEO meta title
+        metaDescription:
+          type: string
+          nullable: true
+          example: "SEO Description"
+          description: SEO meta description
         publishedAt:
           type: string
           format: date-time
@@ -298,19 +189,22 @@ components:
           type: integer
           nullable: true
           description: "Display order (higher = shown first)"
-        categoryId:
+        solutions:
           type: string
-          format: uuid
-          nullable: true
-          description: "Category ID (optional)"
-        technologies:
+          example: '["solution-uuid-1", "solution-uuid-2"]'
+          description: JSON string array of solution IDs
+        industries:
           type: string
-          example: '["technology-uuid-1", "technology-uuid-2"]'
-          description: JSON string array of technology IDs
-        images:
+          example: '["industry-uuid-1", "industry-uuid-2"]'
+          description: JSON string array of industry IDs
+        capabilities:
           type: string
-          description: 'JSON string array of gallery images, contoh: ''[{"imageId":"media-uuid-1","order":0},{"imageId":"media-uuid-2","order":1}]'''
-          example: '[{"imageId":"media-uuid-1","order":0},{"imageId":"media-uuid-2","order":1}]'
+          example: '["capability-uuid-1", "capability-uuid-2"]'
+          description: JSON string array of capability IDs
+        seoKeywords:
+          type: string
+          example: '[{"keyword": "typescript", "order": 0}]'
+          description: JSON string array of SEO keywords
 
     UpdateCaseStudy:
       type: object
@@ -353,6 +247,14 @@ components:
           type: string
           enum: [draft, published, scheduled, archived]
           description: "Publication status"
+        metaTitle:
+          type: string
+          nullable: true
+          description: SEO meta title
+        metaDescription:
+          type: string
+          nullable: true
+          description: SEO meta description
         publishedAt:
           type: string
           format: date-time
@@ -366,16 +268,19 @@ components:
           type: integer
           nullable: true
           description: "Display order (higher = shown first)"
-        categoryId:
+        solutions:
           type: string
-          format: uuid
-          nullable: true
-          description: "Category ID (optional)"
-        technologies:
+          example: '["solution-uuid-1", "solution-uuid-2"]'
+          description: JSON string array of solution IDs
+        industries:
           type: string
-          example: '["technology-uuid-1", "technology-uuid-2"]'
-          description: JSON string array of technology IDs
-        images:
+          example: '["industry-uuid-1", "industry-uuid-2"]'
+          description: JSON string array of industry IDs
+        capabilities:
           type: string
-          description: 'JSON string array of gallery images, contoh: ''[{"imageId":"media-uuid-1","order":0},{"imageId":"media-uuid-2","order":1}]'''
-          example: '[{"imageId":"media-uuid-1","order":0},{"imageId":"media-uuid-2","order":1}]'
+          example: '["capability-uuid-1", "capability-uuid-2"]'
+          description: JSON string array of capability IDs
+        seoKeywords:
+          type: string
+          example: '[{"keyword": "typescript", "order": 0}]'
+          description: JSON string array of SEO keywords

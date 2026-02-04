@@ -1,0 +1,116 @@
+import { Prisma } from "@prisma/client";
+
+export const articlePublicSelect = {
+  id: true,
+  title: true,
+  slug: true,
+  excerpt: true,
+  publishedAt: true,
+  viewCount: true,
+  isFeatured: true,
+  metaTitle: true,
+  metaDescription: true,
+  updatedAt: true,
+
+  thumbnailMedia: {
+    select: {
+      id: true,
+      url: true,
+      altText: true,
+    },
+  },
+  category: {
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+    },
+  },
+  tags: {
+    select: {
+      tag: {
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+        },
+      },
+    },
+    take: 5,
+  },
+  creator: {
+    select: {
+      id: true,
+      name: true,
+    },
+  },
+} satisfies Prisma.ArticleSelect;
+
+export const articlePublicDetailSelect = {
+  id: true,
+  title: true,
+  slug: true,
+  excerpt: true,
+  content: true,
+
+  publishedAt: true,
+  viewCount: true,
+  isFeatured: true,
+
+  metaTitle: true,
+  metaDescription: true,
+
+  thumbnailMedia: {
+    select: {
+      id: true,
+      url: true,
+      altText: true,
+      width: true,
+      height: true,
+    },
+  },
+
+  category: {
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+      description: true,
+    },
+  },
+
+  tags: {
+    select: {
+      tag: {
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+        },
+      },
+    },
+  },
+
+  creator: {
+    select: {
+      id: true,
+      name: true,
+    },
+  },
+
+  seoKeywords: {
+    select: {
+      id: true,
+      keyword: true,
+      order: true,
+    },
+    orderBy: {
+      order: "asc" as const,
+    },
+  },
+} satisfies Prisma.ArticleSelect;
+
+export const transformArticlePublic = (article: any) => ({
+  ...article,
+  tags: article.tags.map((at: any) => at.tag),
+});

@@ -11,9 +11,8 @@ interface AuthJwtPayload extends jwt.JwtPayload {
 export const authMiddleware = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
-  console.log("authMiddleware");
   let token;
 
   if (
@@ -21,8 +20,8 @@ export const authMiddleware = async (
     req.headers.authorization.startsWith("Bearer")
   ) {
     token = req.headers.authorization.split(" ")[1];
-  } else if (req.cookies?.jwt) {
-    token = req.cookies.jwt;
+  } else if (req.cookies?.token) {
+    token = req.cookies.token;
   }
 
   if (!token) {
@@ -33,7 +32,7 @@ export const authMiddleware = async (
     // Verify the token and extract the user Id
     const decoded = jwt.verify(
       token,
-      process.env.JWT_SECRET as string
+      process.env.JWT_SECRET as string,
     ) as AuthJwtPayload;
     const user = await prisma.user.findUnique({
       where: {
@@ -43,6 +42,10 @@ export const authMiddleware = async (
 
     if (!user) {
       return res.status(401).json({ message: "User not found" });
+    }
+
+    if (!user.isActive) {
+      return res.status(403).json({ message: "User is inactive" });
     }
 
     req.user = user;

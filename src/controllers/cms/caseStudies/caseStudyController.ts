@@ -1,11 +1,15 @@
-import { Request, Response } from "express";
+import e, { Request, Response } from "express";
 import { prisma } from "../../../config/db";
 import {
   caseStudyInclude,
   transformCaseStudy,
 } from "../../../includes/cms/caseStudiesInclude";
 import {
+  parseCapabilities,
   parseCaseStudyImages,
+  parseIndustries,
+  parseSeoKeywords,
+  parseSolutions,
   parseTechnologies,
 } from "../../../utils/parseHelper";
 import { validateCaseStudyData } from "../../../validators/caseStudyValidator";
@@ -14,34 +18,7 @@ import {
   buildCMSCaseStudySortParams,
   buildCMSCaseStudyWhereCondition,
 } from "../../../utils/queryBuilder/cms/caseStudies/caseStudies";
-
-// export const getCaseStudies = async (req: Request, res: Response) => {
-//   try {
-//     if (!req.user?.id) {
-//       return res.status(401).json({ message: "Unauthorized" });
-//     }
-
-//     const caseStudies = await prisma.caseStudy.findMany({
-//       where: {
-//         deletedAt: null,
-//       },
-//       include: caseStudyInclude,
-//       orderBy: {
-//         createdAt: "desc",
-//       },
-//     });
-
-//     const transformedCaseStudies = caseStudies.map(transformCaseStudy);
-
-//     return res.status(200).json({
-//       status: "success",
-//       data: transformedCaseStudies,
-//     });
-//   } catch (error) {
-//     console.error("Error fetching case studies:", error);
-//     res.status(500).json({ message: "Failed to fetch case studies" });
-//   }
-// };
+import sanitizeHtml from "sanitize-html";
 
 export const getCaseStudies = async (req: Request, res: Response) => {
   try {
@@ -57,24 +34,30 @@ export const getCaseStudies = async (req: Request, res: Response) => {
       search,
       status,
       isFeatured,
-      categorySlug,
+      solutionSlug,
+      industrySlug,
+      capabilitySlug,
+      year,
     } = req.query;
 
     const where = buildCMSCaseStudyWhereCondition({
       search: search as string,
       status: status as string,
       isFeatured: isFeatured as string,
-      categorySlug: categorySlug as string,
+      solutionSlug: solutionSlug as string,
+      industrySlug: industrySlug as string,
+      capabilitySlug: capabilitySlug as string,
+      year: year as string,
     });
 
     const pagination = buildCMSCaseStudyPaginationParams(
       page as string,
-      limit as string
+      limit as string,
     );
 
     const orderByParams = buildCMSCaseStudySortParams(
       sortBy as string,
-      order as string
+      order as string,
     );
 
     const [caseStudies, total] = await Promise.all([
@@ -98,7 +81,13 @@ export const getCaseStudies = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error("Error fetching case studies:", error);
-    res.status(500).json({ message: "Failed to fetch case studies", error });
+
+    const message =
+      process.env.NODE_ENV === "production"
+        ? "Failed to fetch case studies"
+        : (error as Error).message;
+
+    res.status(500).json({ message });
   }
 };
 
@@ -129,8 +118,34 @@ export const getCaseStudyById = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error("Error fetching case studies:", error);
-    res.status(500).json({ message: "Failed to fetch case studies" });
+
+    const message =
+      process.env.NODE_ENV === "production"
+        ? "Failed to fetch case studies"
+        : (error as Error).message;
+
+    res.status(500).json({ message });
   }
+};
+
+const generateSlug = (text: string) => {
+  return text
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, "")
+    .replace(/\s+/g, "-");
+};
+
+const resolveCreateCaseStudySlug = (slug?: string, title?: string) => {
+  if (slug && slug.trim()) {
+    return slug.trim().toLowerCase();
+  }
+
+  if (title) {
+    return generateSlug(title).toLowerCase();
+  }
+
+  return null;
 };
 
 export const createCaseStudy = async (req: Request, res: Response) => {
@@ -142,51 +157,73 @@ export const createCaseStudy = async (req: Request, res: Response) => {
     const {
       title,
       slug,
-      excerpt,
+      summary,
       content,
       description,
+      problem,
+      solution,
       client,
-      duration,
       year,
       status,
+      metaTitle,
+      metaDescription,
       publishedAt,
       isFeatured,
       thumbnailId,
-      technologies,
-      images,
-      categoryId,
+      solutions,
+      industries,
+      capabilities,
+      seoKeywords,
     } = req.body;
 
-    let parsedTechnologies, parsedImages;
+    const cleanContent =
+      typeof content === "string"
+        ? sanitizeHtml(content, {
+            allowedTags: sanitizeHtml.defaults.allowedTags.concat([
+              "h1",
+              "h2",
+              "h3",
+              "h4",
+              "h5",
+              "h6",
+              "img",
+              "span",
+            ]),
+            allowedAttributes: false,
+            allowedSchemes: ["http", "https", "data"],
+            disallowedTagsMode: "discard",
+            nonBooleanAttributes: ["style"],
+          })
+        : "";
+
+    let parsedSolutions,
+      parsedIndustries,
+      parsedCapabilities,
+      parsedSeoKeywords;
     try {
-      parsedTechnologies = parseTechnologies(technologies);
-      parsedImages = parseCaseStudyImages(images);
+      parsedSolutions = parseSolutions(solutions);
+      parsedIndustries = parseIndustries(industries);
+      parsedCapabilities = parseCapabilities(capabilities);
+      parsedSeoKeywords = parseSeoKeywords(seoKeywords);
     } catch (error) {
       return res.status(400).json({
         message: error instanceof Error ? error.message : "Invalid format",
       });
     }
 
-    for (const img of parsedImages) {
-      const media = await prisma.media.findUnique({
-        where: { id: img.imageId },
-      });
-      if (!media || media.deletedAt) {
-        return res
-          .status(404)
-          .json({ message: `Media with ID ${img.imageId} not found` });
-      }
-    }
-
     const validationErrors = validateCaseStudyData({
       title,
       slug,
+      summary,
       content,
       description,
+      problem,
+      solution,
       client,
       status,
-      technologies: parsedTechnologies,
-      categoryId,
+      solutions: parsedSolutions,
+      industries: parsedIndustries,
+      capabilities: parsedCapabilities,
     });
 
     if (validationErrors.length > 0) {
@@ -195,18 +232,62 @@ export const createCaseStudy = async (req: Request, res: Response) => {
       });
     }
 
-    if (categoryId) {
-      const categoryExists = await prisma.caseStudyCategory.findUnique({
-        where: { id: categoryId },
+    if (parsedSolutions.length > 0) {
+      const solutionsExist = await prisma.solution.findMany({
+        where: {
+          id: { in: parsedSolutions },
+          deletedAt: null,
+          isActive: true,
+        },
       });
 
-      if (!categoryExists) {
-        return res.status(400).json({ message: "Category not found" });
+      if (solutionsExist.length !== parsedSolutions.length) {
+        return res.status(400).json({
+          message: "One or more solutions not found or inactive",
+        });
       }
     }
 
+    if (parsedIndustries.length > 0) {
+      const industriesExist = await prisma.industry.findMany({
+        where: {
+          id: { in: parsedIndustries },
+          deletedAt: null,
+          isActive: true,
+        },
+      });
+
+      if (industriesExist.length !== parsedIndustries.length) {
+        return res.status(400).json({
+          message: "One or more industries not found or inactive",
+        });
+      }
+    }
+
+    if (parsedCapabilities.length > 0) {
+      const capabilitiesExist = await prisma.capability.findMany({
+        where: {
+          id: { in: parsedCapabilities },
+          deletedAt: null,
+          isActive: true,
+        },
+      });
+
+      if (capabilitiesExist.length !== parsedCapabilities.length) {
+        return res.status(400).json({
+          message: "One or more capabilities not found or inactive",
+        });
+      }
+    }
+
+    const finalSlug = resolveCreateCaseStudySlug(slug, title);
+
+    if (!finalSlug) {
+      return res.status(400).json({ message: "Slug is required" });
+    }
+
     const existingCaseStudy = await prisma.caseStudy.findFirst({
-      where: { slug, deletedAt: null },
+      where: { slug: finalSlug, deletedAt: null },
     });
 
     if (existingCaseStudy) {
@@ -230,35 +311,53 @@ export const createCaseStudy = async (req: Request, res: Response) => {
 
     const caseStudyData: any = {
       title,
-      slug,
-      excerpt,
-      content,
+      slug: finalSlug,
+      summary,
+      content: cleanContent,
       description,
+      problem,
+      solution,
       client,
-      duration,
       year,
       status,
+      metaTitle,
+      metaDescription,
       publishedAt,
       isFeatured,
       thumbnailId: selectedThumbnailId,
-      categoryId,
       createdBy: req.user.id,
       updatedBy: req.user.id,
     };
 
-    if (parsedTechnologies.length > 0) {
-      caseStudyData.technologies = {
-        create: parsedTechnologies.map((techId: string) => ({
-          technologyId: techId,
+    if (parsedSolutions.length > 0) {
+      caseStudyData.solutions = {
+        create: parsedSolutions.map((solutionId: string) => ({
+          solutionId: solutionId,
         })),
       };
     }
 
-    if (parsedImages.length > 0) {
-      caseStudyData.images = {
-        create: parsedImages.map((img) => ({
-          imageId: img.imageId,
-          order: img.order || 0,
+    if (parsedIndustries.length > 0) {
+      caseStudyData.industries = {
+        create: parsedIndustries.map((industryId: string) => ({
+          industryId: industryId,
+        })),
+      };
+    }
+
+    if (parsedCapabilities.length > 0) {
+      caseStudyData.capabilities = {
+        create: parsedCapabilities.map((capabilityId: string) => ({
+          capabilityId: capabilityId,
+        })),
+      };
+    }
+
+    if (parsedSeoKeywords.length > 0) {
+      caseStudyData.seoKeywords = {
+        create: parsedSeoKeywords.map((item) => ({
+          keyword: item.keyword,
+          order: item.order || 0,
         })),
       };
     }
@@ -299,19 +398,23 @@ export const updateCaseStudy = async (req: Request, res: Response) => {
     const {
       title,
       slug,
-      excerpt,
+      summary,
       content,
       description,
+      problem,
+      solution,
       client,
-      duration,
       year,
       status,
+      metaTitle,
+      metaDescription,
       publishedAt,
       isFeatured,
       thumbnailId,
-      technologies,
-      images,
-      categoryId,
+      solutions,
+      industries,
+      capabilities,
+      seoKeywords,
     } = req.body;
 
     const existingCaseStudy = await prisma.caseStudy.findFirst({
@@ -322,26 +425,60 @@ export const updateCaseStudy = async (req: Request, res: Response) => {
       return res.status(404).json({ message: "Case study not found" });
     }
 
-    let parsedTechnologies, parsedImages;
+    const cleanContent =
+      typeof content === "string"
+        ? sanitizeHtml(content, {
+            allowedTags: sanitizeHtml.defaults.allowedTags.concat([
+              "h1",
+              "h2",
+              "h3",
+              "h4",
+              "h5",
+              "h6",
+              "img",
+              "span",
+            ]),
+            allowedAttributes: false,
+            allowedSchemes: ["http", "https", "data"],
+            disallowedTagsMode: "discard",
+            nonBooleanAttributes: ["style"],
+          })
+        : existingCaseStudy.content;
+
+    let parsedSolutions,
+      parsedIndustries,
+      parsedCapabilities,
+      parsedSeoKeywords;
     try {
-      parsedTechnologies = parseTechnologies(technologies);
-      parsedImages = parseCaseStudyImages(images);
+      parsedSolutions = parseSolutions(solutions);
+      parsedIndustries = parseIndustries(industries);
+      parsedCapabilities = parseCapabilities(capabilities);
+      parsedSeoKeywords = parseSeoKeywords(seoKeywords);
     } catch (error) {
       return res.status(400).json({
         message: error instanceof Error ? error.message : "Invalid format",
       });
     }
 
-    const validationErrors = validateCaseStudyData({
-      title,
-      slug,
-      content,
-      description,
-      client,
-      status,
-      technologies: parsedTechnologies,
-      categoryId,
-    });
+    const validationErrors = validateCaseStudyData(
+      {
+        title,
+        slug,
+        summary,
+        content,
+        description,
+        problem,
+        solution,
+        client,
+        status,
+        metaTitle,
+        metaDescription,
+        solutions: parsedSolutions,
+        industries: parsedIndustries,
+        capabilities: parsedCapabilities,
+      },
+      true,
+    );
 
     if (validationErrors.length > 0) {
       return res.status(400).json({
@@ -349,20 +486,62 @@ export const updateCaseStudy = async (req: Request, res: Response) => {
       });
     }
 
-    if (categoryId) {
-      const categoryExists = await prisma.caseStudyCategory.findUnique({
-        where: { id: categoryId },
+    if (parsedSolutions.length > 0) {
+      const solutionsExist = await prisma.solution.findMany({
+        where: {
+          id: { in: parsedSolutions },
+          deletedAt: null,
+          isActive: true,
+        },
       });
 
-      if (!categoryExists) {
-        return res.status(404).json({ message: "Category not found" });
+      if (solutionsExist.length !== parsedSolutions.length) {
+        return res.status(400).json({
+          message: "One or more solutions not found or inactive",
+        });
       }
     }
+
+    if (parsedIndustries.length > 0) {
+      const industriesExist = await prisma.industry.findMany({
+        where: {
+          id: { in: parsedIndustries },
+          deletedAt: null,
+          isActive: true,
+        },
+      });
+
+      if (industriesExist.length !== parsedIndustries.length) {
+        return res.status(400).json({
+          message: "One or more industries not found or inactive",
+        });
+      }
+    }
+
+    if (parsedCapabilities.length > 0) {
+      const capabilitiesExist = await prisma.capability.findMany({
+        where: {
+          id: { in: parsedCapabilities },
+          deletedAt: null,
+          isActive: true,
+        },
+      });
+
+      if (capabilitiesExist.length !== parsedCapabilities.length) {
+        return res.status(400).json({
+          message: "One or more capabilities not found or inactive",
+        });
+      }
+    }
+
+    const finalSlug = slug?.trim()
+      ? slug.trim().toLowerCase()
+      : existingCaseStudy.slug;
 
     if (slug) {
       const slugExists = await prisma.caseStudy.findFirst({
         where: {
-          slug,
+          slug: finalSlug,
           NOT: { id },
           deletedAt: null,
         },
@@ -390,36 +569,56 @@ export const updateCaseStudy = async (req: Request, res: Response) => {
 
     const caseStudyData: any = {
       title,
-      slug,
-      excerpt,
-      content,
+      slug: finalSlug,
+      summary,
+      content: cleanContent,
       description,
+      problem,
+      solution,
       client,
-      duration,
       year,
       status,
+      metaTitle,
+      metaDescription,
       publishedAt,
       isFeatured,
       thumbnailId: selectedThumbnailId,
-      categoryId,
       updatedBy: req.user.id,
     };
 
-    if (parsedTechnologies.length > 0) {
-      caseStudyData.technologies = {
+    if (parsedSolutions.length > 0) {
+      caseStudyData.solutions = {
         deleteMany: {},
-        create: parsedTechnologies.map((techId: string) => ({
-          technologyId: techId,
+        create: parsedSolutions.map((solutionId: string) => ({
+          solutionId: solutionId,
         })),
       };
     }
 
-    if (parsedImages.length > 0) {
-      caseStudyData.images = {
+    if (parsedIndustries.length > 0) {
+      caseStudyData.industries = {
         deleteMany: {},
-        create: parsedImages.map((img) => ({
-          imageId: img.imageId,
-          order: img.order || 0,
+        create: parsedIndustries.map((industryId: string) => ({
+          industryId: industryId,
+        })),
+      };
+    }
+
+    if (parsedCapabilities.length > 0) {
+      caseStudyData.capabilities = {
+        deleteMany: {},
+        create: parsedCapabilities.map((capabilityId: string) => ({
+          capabilityId: capabilityId,
+        })),
+      };
+    }
+
+    if (parsedSeoKeywords.length > 0) {
+      caseStudyData.seoKeywords = {
+        deleteMany: {},
+        create: parsedSeoKeywords.map((item) => ({
+          keyword: item.keyword,
+          order: item.order || 0,
         })),
       };
     }
@@ -482,6 +681,58 @@ export const deleteCaseStudy = async (req: Request, res: Response) => {
     console.error("Error deleting case study:", error);
     return res.status(500).json({
       message: "Failed to delete case study",
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+};
+
+export const bulkDeleteCaseStudy = async (req: Request, res: Response) => {
+  try {
+    if (!req.user?.id) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const { ids } = req.body as { ids?: string[] };
+
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({
+        message: "Case study IDs are required",
+      });
+    }
+
+    const caseStudies = await prisma.caseStudy.findMany({
+      where: {
+        id: { in: ids },
+        deletedAt: null,
+      },
+      select: { id: true },
+    });
+
+    if (caseStudies.length === 0) {
+      return res.status(404).json({
+        message: "No case studies found or already deleted",
+      });
+    }
+
+    await prisma.caseStudy.updateMany({
+      where: {
+        id: { in: caseStudies.map((c) => c.id) },
+      },
+      data: {
+        deletedAt: new Date(),
+        updatedBy: req.user.id,
+      },
+    });
+
+    return res.status(200).json({
+      status: "success",
+      message: `${caseStudies.length} case study(ies) deleted successfully`,
+      deletedCount: caseStudies.length,
+    });
+  } catch (error) {
+    console.error("Error bulk deleting case study:", error);
+    return res.status(500).json({
+      message: "Failed to bulk delete case studies",
       error: error instanceof Error ? error.message : "Unknown error",
     });
   }

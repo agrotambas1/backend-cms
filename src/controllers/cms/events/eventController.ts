@@ -11,29 +11,7 @@ import {
   buildCMSEventSortParams,
   buildCMSEventWhereCondition,
 } from "../../../utils/queryBuilder/cms/event/event";
-
-// export const getEvents = async (req: Request, res: Response) => {
-//   try {
-//     if (!req.user?.id) {
-//       return res.status(401).json({ message: "Unauthorized" });
-//     }
-
-//     const events = await prisma.event.findMany({
-//       where: {
-//         deletedAt: null,
-//       },
-//       include: eventInclude,
-//       orderBy: {
-//         createdAt: "desc",
-//       },
-//     });
-
-//     return res.status(200).json(events);
-//   } catch (error) {
-//     console.error("Error fetching events:", error);
-//     res.status(500).json({ message: "Failed to fetch events" });
-//   }
-// };
+import sanitizeHtml from "sanitize-html";
 
 export const getEvents = async (req: Request, res: Response) => {
   try {
@@ -50,6 +28,8 @@ export const getEvents = async (req: Request, res: Response) => {
       status,
       isFeatured,
       locationType,
+      eventType,
+      solutionSlug,
     } = req.query;
 
     const where = buildCMSEventWhereCondition({
@@ -57,16 +37,18 @@ export const getEvents = async (req: Request, res: Response) => {
       status: status as string,
       isFeatured: isFeatured as string,
       locationType: locationType as string,
+      eventType: eventType as string,
+      solutionSlug: solutionSlug as string,
     });
 
     const pagination = buildCMSEventPaginationParams(
       page as string,
-      limit as string
+      limit as string,
     );
 
     const orderByParams = buildCMSEventSortParams(
       sortBy as string,
-      order as string
+      order as string,
     );
 
     const [events, total] = await Promise.all([
@@ -90,7 +72,13 @@ export const getEvents = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error("Error fetching events:", error);
-    res.status(500).json({ message: "Failed to fetch events", error });
+
+    const message =
+      process.env.NODE_ENV === "production"
+        ? "Failed to fetch events"
+        : (error as Error).message;
+
+    res.status(500).json({ message });
   }
 };
 
@@ -120,9 +108,35 @@ export const getEventById = async (req: Request, res: Response) => {
       data: { event },
     });
   } catch (error) {
-    console.error("Error fetching event by ID:", error);
-    res.status(500).json({ message: "Failed to fetch event by ID" });
+    console.error("Error fetching event:", error);
+
+    const message =
+      process.env.NODE_ENV === "production"
+        ? "Failed to fetch event"
+        : (error as Error).message;
+
+    res.status(500).json({ message });
   }
+};
+
+const generateSlug = (text: string) => {
+  return text
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, "")
+    .replace(/\s+/g, "-");
+};
+
+const resolveCreateEventSlug = (slug?: string, title?: string) => {
+  if (slug && slug.trim()) {
+    return slug.trim().toLowerCase();
+  }
+
+  if (title) {
+    return generateSlug(title).toLowerCase();
+  }
+
+  return null;
 };
 
 export const createEvent = async (req: Request, res: Response) => {
@@ -137,6 +151,7 @@ export const createEvent = async (req: Request, res: Response) => {
       excerpt,
       content,
       thumbnailId,
+      eventType,
       eventStart,
       eventEnd,
       location,
@@ -146,29 +161,8 @@ export const createEvent = async (req: Request, res: Response) => {
       quota,
       status,
       isFeatured,
-      images,
+      solutions,
     } = req.body;
-
-    let parsedImages: ParsedGalleryItem[];
-    try {
-      parsedImages = parseGallery(images);
-    } catch (error) {
-      return res.status(400).json({
-        message: error instanceof Error ? error.message : "Invalid format",
-      });
-    }
-
-    // Validate media exists
-    for (const img of parsedImages) {
-      const media = await prisma.media.findUnique({
-        where: { id: img.mediaId },
-      });
-      if (!media || media.deletedAt) {
-        return res
-          .status(400)
-          .json({ message: `Media with ID ${img.mediaId} not found` });
-      }
-    }
 
     const validationErrors = validateEventData({
       title,
@@ -185,8 +179,34 @@ export const createEvent = async (req: Request, res: Response) => {
       return res.status(400).json({ message: validationErrors[0] });
     }
 
+    const cleanContent =
+      typeof content === "string"
+        ? sanitizeHtml(content, {
+            allowedTags: sanitizeHtml.defaults.allowedTags.concat([
+              "h1",
+              "h2",
+              "h3",
+              "h4",
+              "h5",
+              "h6",
+              "img",
+              "span",
+            ]),
+            allowedAttributes: false,
+            allowedSchemes: ["http", "https", "data"],
+            disallowedTagsMode: "discard",
+            nonBooleanAttributes: ["style"],
+          })
+        : "";
+
+    const finalSlug = resolveCreateEventSlug(slug, title);
+
+    if (!finalSlug) {
+      return res.status(400).json({ message: "Slug is required" });
+    }
+
     const existingEvent = await prisma.event.findFirst({
-      where: { slug, deletedAt: null },
+      where: { slug: finalSlug, deletedAt: null },
     });
 
     if (existingEvent) {
@@ -208,12 +228,29 @@ export const createEvent = async (req: Request, res: Response) => {
       selectedThumbnailId = thumbnailId;
     }
 
+    if (solutions && solutions.length > 0) {
+      const solutionRecords = await prisma.solution.findMany({
+        where: {
+          id: { in: solutions },
+          deletedAt: null,
+          isActive: true,
+        },
+      });
+
+      if (solutionRecords.length !== solutions.length) {
+        return res.status(400).json({
+          message: "One or more solutions do not exist or are inactive",
+        });
+      }
+    }
+
     const eventData: any = {
       title,
-      slug,
+      slug: finalSlug,
       excerpt,
-      content,
+      content: cleanContent,
       thumbnailId: selectedThumbnailId,
+      eventType,
       eventStart: eventStart ? new Date(eventStart) : null,
       eventEnd: eventEnd ? new Date(eventEnd) : null,
       location,
@@ -226,11 +263,10 @@ export const createEvent = async (req: Request, res: Response) => {
       createdBy: req.user.id,
     };
 
-    if (parsedImages.length > 0) {
-      eventData.images = {
-        create: parsedImages.map((i) => ({
-          mediaId: i.mediaId,
-          order: i.order || 0,
+    if (solutions && solutions.length > 0) {
+      eventData.solutions = {
+        create: solutions.map((solutionId: string) => ({
+          solutionId,
         })),
       };
     }
@@ -261,6 +297,7 @@ export const updateEvent = async (req: Request, res: Response) => {
     }
 
     const { id } = req.params;
+
     if (!id) return res.status(400).json({ message: "Event ID is required" });
 
     const {
@@ -269,6 +306,7 @@ export const updateEvent = async (req: Request, res: Response) => {
       excerpt,
       content,
       thumbnailId,
+      eventType,
       eventStart,
       eventEnd,
       location,
@@ -278,21 +316,58 @@ export const updateEvent = async (req: Request, res: Response) => {
       quota,
       status,
       isFeatured,
-      images,
+      solutions,
     } = req.body;
 
-    const files = req.files as { [fieldname: string]: Express.Multer.File[] };
-
-    const existingEvent = await prisma.event.findUnique({
-      where: { id },
-      include: { images: true },
+    const existingEvent = await prisma.event.findFirst({
+      where: {
+        id,
+        deletedAt: null,
+      },
+      include: {
+        solutions: true,
+      },
     });
+
     if (!existingEvent)
       return res.status(404).json({ message: "Event not found" });
 
+    const validationErrors = validateEventData(req.body, true);
+
+    if (validationErrors.length > 0) {
+      return res.status(400).json({
+        message: "Validation failed",
+        errors: validationErrors,
+      });
+    }
+
+    const cleanContent =
+      typeof content === "string"
+        ? sanitizeHtml(content, {
+            allowedTags: sanitizeHtml.defaults.allowedTags.concat([
+              "h1",
+              "h2",
+              "h3",
+              "h4",
+              "h5",
+              "h6",
+              "img",
+              "span",
+            ]),
+            allowedAttributes: false,
+            allowedSchemes: ["http", "https", "data"],
+            disallowedTagsMode: "discard",
+            nonBooleanAttributes: ["style"],
+          })
+        : existingEvent.content;
+
+    const finalSlug = slug?.trim()
+      ? slug.trim().toLowerCase()
+      : existingEvent.slug;
+
     if (slug && slug !== existingEvent.slug) {
       const slugExists = await prisma.event.findFirst({
-        where: { slug, NOT: { id }, deletedAt: null },
+        where: { slug: finalSlug, NOT: { id }, deletedAt: null },
       });
       if (slugExists)
         return res.status(409).json({ message: "Slug already exists" });
@@ -311,33 +386,29 @@ export const updateEvent = async (req: Request, res: Response) => {
       selectedThumbnailId = thumbnailId;
     }
 
-    let parsedImages: ParsedGalleryItem[] = [];
-    if (images) {
-      try {
-        parsedImages = parseGallery(images);
-        for (const img of parsedImages) {
-          const media = await prisma.media.findUnique({
-            where: { id: img.mediaId },
-          });
-          if (!media || media.deletedAt) {
-            return res
-              .status(400)
-              .json({ message: `Media with ID ${img.mediaId} not found` });
-          }
-        }
-      } catch (err: any) {
-        return res
-          .status(400)
-          .json({ message: err.message || "Invalid images" });
+    if (solutions !== undefined && solutions.length > 0) {
+      const solutionRecords = await prisma.solution.findMany({
+        where: {
+          id: { in: solutions },
+          deletedAt: null,
+          isActive: true,
+        },
+      });
+
+      if (solutionRecords.length !== solutions.length) {
+        return res.status(400).json({
+          message: "One or more solutions do not exist or are inactive",
+        });
       }
     }
 
     const eventData: any = {
       title,
-      slug,
+      slug: finalSlug,
       excerpt,
-      content,
+      content: cleanContent,
       thumbnailId: selectedThumbnailId,
+      eventType: eventType !== undefined ? eventType : existingEvent.eventType,
       eventStart: eventStart ? new Date(eventStart) : existingEvent.eventStart,
       eventEnd: eventEnd ? new Date(eventEnd) : existingEvent.eventEnd,
       location,
@@ -353,12 +424,11 @@ export const updateEvent = async (req: Request, res: Response) => {
       updatedBy: req.user.id,
     };
 
-    if (parsedImages.length > 0) {
-      eventData.images = {
-        deleteMany: {},
-        create: parsedImages.map((i) => ({
-          mediaId: i.mediaId,
-          order: i.order || 0,
+    if (solutions !== undefined) {
+      eventData.solutions = {
+        deleteMany: {}, // Remove all existing solutions
+        create: solutions.map((solutionId: string) => ({
+          solutionId,
         })),
       };
     }
@@ -419,6 +489,58 @@ export const deleteEvent = async (req: Request, res: Response) => {
     console.error("Error deleting event:", error);
     return res.status(500).json({
       message: "Failed to delete event",
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+};
+
+export const bulkDeleteEvent = async (req: Request, res: Response) => {
+  try {
+    if (!req.user?.id) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const { ids } = req.body as { ids?: string[] };
+
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({
+        message: "Event IDs are required",
+      });
+    }
+
+    const events = await prisma.event.findMany({
+      where: {
+        id: { in: ids },
+        deletedAt: null,
+      },
+      select: { id: true },
+    });
+
+    if (events.length === 0) {
+      return res.status(404).json({
+        message: "No events found or already deleted",
+      });
+    }
+
+    await prisma.event.updateMany({
+      where: {
+        id: { in: events.map((e) => e.id) },
+      },
+      data: {
+        deletedAt: new Date(),
+        updatedBy: req.user.id,
+      },
+    });
+
+    return res.status(200).json({
+      status: "success",
+      message: `${events.length} event(s) deleted successfully`,
+      deletedCount: events.length,
+    });
+  } catch (error) {
+    console.error("Error bulk deleting event:", error);
+    return res.status(500).json({
+      message: "Failed to bulk delete events",
       error: error instanceof Error ? error.message : "Unknown error",
     });
   }

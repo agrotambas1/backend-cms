@@ -1,7 +1,8 @@
 import express from "express";
 import { authMiddleware } from "../../../middleware/authMiddleware";
-import { editorsOnly } from "../../../middleware/permission";
+import { adminOnly, editorsOnly } from "../../../middleware/permission";
 import {
+  bulkDeleteCaseStudy,
   createCaseStudy,
   deleteCaseStudy,
   getCaseStudies,
@@ -20,7 +21,9 @@ router.post("/case-studies", editorsOnly, createCaseStudy);
 
 router.put("/case-studies/:id", editorsOnly, updateCaseStudy);
 
-router.delete("/case-studies/:id", editorsOnly, deleteCaseStudy);
+router.delete("/case-studies/:id", adminOnly, deleteCaseStudy);
+
+router.delete("/case-studies", adminOnly, bulkDeleteCaseStudy);
 
 export default router;
 
@@ -29,7 +32,7 @@ export default router;
  * /api/cms/case-studies:
  *   get:
  *     summary: Get all case studies
- *     tags: [Case Studies]
+ *     tags: [Case Study]
  *     security:
  *       - bearerAuth: []
  *     responses:
@@ -52,7 +55,7 @@ export default router;
  * /api/cms/case-studies/{id}:
  *   get:
  *     summary: Get case study by ID
- *     tags: [Case Studies]
+ *     tags: [Case Study]
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -93,7 +96,7 @@ export default router;
  * /api/cms/case-studies/:
  *   post:
  *     summary: Create a new case studies
- *     tags: [Case Studies]
+ *     tags: [Case Study]
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -136,7 +139,7 @@ export default router;
  * /api/cms/case-studies/{id}:
  *   put:
  *     summary: Update case study by ID
- *     tags: [Case Studies]
+ *     tags: [Case Study]
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -188,7 +191,7 @@ export default router;
  * /api/cms/case-studies/{id}:
  *   delete:
  *     summary: Delete case study by ID (soft delete)
- *     tags: [Case Studies]
+ *     tags: [Case Study]
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -218,6 +221,55 @@ export default router;
  *         description: Unauthorized
  *       404:
  *         description: Case study not found
+ *       500:
+ *         description: Server error
+ */
+
+/**
+ * @swagger
+ * /api/cms/case-studies:
+ *   delete:
+ *     summary: Bulk delete case studies (soft delete)
+ *     tags: [Case Study]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - ids
+ *             properties:
+ *               ids:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 example: ["uuid-1", "uuid-2", "uuid-3"]
+ *     responses:
+ *       200:
+ *         description: Case studies deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: success
+ *                 message:
+ *                   type: string
+ *                   example: 3 case study(ies) deleted successfully
+ *                 deletedCount:
+ *                   type: number
+ *                   example: 3
+ *       400:
+ *         description: Case study IDs are required
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: No case studies found or already deleted
  *       500:
  *         description: Server error
  */

@@ -10,15 +10,23 @@ export const eventInclude = {
       url: true,
     },
   },
-  images: {
-    orderBy: [{ order: "asc" as Prisma.SortOrder }],
-    include: { media: true },
+  solutions: {
+    select: {
+      solution: {
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          description: true,
+        },
+      },
+    },
   },
   creator: { select: { id: true, name: true, username: true } },
   updater: { select: { id: true, name: true, username: true } },
-};
+} satisfies Prisma.EventInclude;
 
 export const transformEvent = (event: any) => ({
   ...event,
-  images: event.images.map((img: any) => img.media),
+  solutions: event.solutions?.map((cs: any) => cs.solution) || [],
 });

@@ -2,7 +2,7 @@ import express from "express";
 import {
   getPublicCategories,
   getPublicCategoryBySlug,
-} from "../../../controllers/public/article/categoryController";
+} from "../../../controllers/public/articles/categoryController";
 
 const router = express.Router();
 

@@ -2,7 +2,9 @@ import express from "express";
 import {
   loginUser,
   logoutUser,
+  me,
 } from "../../../controllers/cms/auth/authController";
+import { authMiddleware } from "../../../middleware/authMiddleware";
 
 const router = express.Router();
 
@@ -37,5 +39,7 @@ router.post("/login", loginUser);
  *         description: Logout successful
  */
 router.post("/logout", logoutUser);
+
+router.get("/me", authMiddleware, me);
 
 export default router;

@@ -2,12 +2,12 @@ import express from "express";
 import {
   getPublicArticleBySlug,
   getPublicArticles,
-} from "../../../controllers/public/article/articleController";
+} from "../../../controllers/public/articles/articleController";
 
 const router = express.Router();
 
-router.get("/article", getPublicArticles);
+router.get("/articles", getPublicArticles);
 
-router.get("/article/:slug", getPublicArticleBySlug);
+router.get("/articles/:slug", getPublicArticleBySlug);
 
 export default router;

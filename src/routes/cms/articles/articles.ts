@@ -5,36 +5,39 @@ import {
   createArticle,
   updateArticle,
   deleteArticle,
+  bulkDeleteArticle,
 } from "../../../controllers/cms/articles/articleController";
 import { authMiddleware } from "../../../middleware/authMiddleware";
-import { editorsOnly } from "../../../middleware/permission";
+import { adminOnly, editorsOnly } from "../../../middleware/permission";
 
 const router = express.Router();
 router.use(authMiddleware);
 
-router.get("/article", getArticles);
+router.get("/articles", getArticles);
 
-router.get("/article/:id", getArticleById);
+router.get("/articles/:id", getArticleById);
 
-router.post("/article", editorsOnly, createArticle);
+router.post("/articles", editorsOnly, createArticle);
 
-router.put("/article/:id", editorsOnly, updateArticle);
+router.put("/articles/:id", editorsOnly, updateArticle);
 
-router.delete("/article/:id", editorsOnly, deleteArticle);
+router.delete("/articles/:id", adminOnly, deleteArticle);
+
+router.delete("/articles", adminOnly, bulkDeleteArticle);
 
 export default router;
 
 /**
  * @swagger
- * /api/cms/article:
+ * /api/cms/articles:
  *   get:
- *     summary: Get all articles
+ *     summary: Get all article
  *     tags: [Article]
  *     security:
  *       - bearerAuth: []
  *     responses:
  *       200:
- *         description: A list of articles
+ *         description: A list of article
  *         content:
  *           application/json:
  *             schema:
@@ -49,7 +52,7 @@ export default router;
 
 /**
  * @swagger
- * /api/cms/article/{id}:
+ * /api/cms/articles/{id}:
  *   get:
  *     summary: Get article by ID
  *     tags: [Article]
@@ -90,7 +93,7 @@ export default router;
 
 /**
  * @swagger
- * /api/cms/article:
+ * /api/cms/articles:
  *   post:
  *     summary: Create a new article
  *     tags: [Article]
@@ -133,7 +136,7 @@ export default router;
 
 /**
  * @swagger
- * /api/cms/article/{id}:
+ * /api/cms/articles/{id}:
  *   put:
  *     summary: Update an existing article
  *     description: |
@@ -187,7 +190,7 @@ export default router;
 
 /**
  * @swagger
- * /api/cms/article/{id}:
+ * /api/cms/articles/{id}:
  *   delete:
  *     summary: Delete article (soft delete)
  *     tags: [Article]
@@ -220,6 +223,55 @@ export default router;
  *         description: Unauthorized
  *       404:
  *         description: Article not found
+ *       500:
+ *         description: Server error
+ */
+
+/**
+ * @swagger
+ * /api/cms/articles:
+ *   delete:
+ *     summary: Bulk delete article (soft delete)
+ *     tags: [Article]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - ids
+ *             properties:
+ *               ids:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 example: ["uuid-1", "uuid-2", "uuid-3"]
+ *     responses:
+ *       200:
+ *         description: Articles deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: success
+ *                 message:
+ *                   type: string
+ *                   example: 3 article(s) deleted successfully
+ *                 deletedCount:
+ *                   type: number
+ *                   example: 3
+ *       400:
+ *         description: Article IDs are required
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: No article found or already deleted
  *       500:
  *         description: Server error
  */

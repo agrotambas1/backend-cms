@@ -1,3 +1,5 @@
+import { Prisma } from "@prisma/client";
+
 export const bannerInclude = {
   image: {
     select: {
@@ -22,4 +24,4 @@ export const bannerInclude = {
       username: true,
     },
   },
-};
+} satisfies Prisma.BannerInclude;

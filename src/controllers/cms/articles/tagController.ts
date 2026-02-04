@@ -4,23 +4,7 @@ import {
   buildCMSArticleTagPaginationParams,
   buildCMSArticleTagSortParams,
   buildCMSArticleTagWhereCondition,
-} from "../../../utils/queryBuilder/cms/article/tags";
-
-// export const getTags = async (req: Request, res: Response) => {
-//   try {
-//     if (!req.user?.id) {
-//       return res.status(401).json({ message: "Unauthorized" });
-//     }
-
-//     const tags = await prisma.articleTag.findMany({
-//       where: { deletedAt: null },
-//       orderBy: { createdAt: "desc" },
-//     });
-//     return res.status(200).json(tags);
-//   } catch (error) {
-//     console.error("Error fetching Tags:", error);
-//   }
-// };
+} from "../../../utils/queryBuilder/cms/articles/tags";
 
 export const getTags = async (req: Request, res: Response) => {
   try {
@@ -71,8 +55,14 @@ export const getTags = async (req: Request, res: Response) => {
       },
     });
   } catch (error) {
-    console.error("Error fetching Tags:", error);
-    res.status(500).json({ message: "Failed to fetch tags" });
+    console.error("Error fetching article tags:", error);
+
+    const message =
+      process.env.NODE_ENV === "production"
+        ? "Failed to fetch article tags"
+        : (error as Error).message;
+
+    res.status(500).json({ message });
   }
 };
 
@@ -90,17 +80,18 @@ export const createTag = async (req: Request, res: Response) => {
       return res.status(401).json({ message: "Unauthorized" });
     }
 
-    const { name } = req.body;
+    const { name, slug } = req.body;
 
     if (!name) {
       return res.status(400).json({ message: "Tag name is required" });
     }
 
-    const slug = generateSlug(name);
+    // const slug = generateSlug(name);
+    const finalSlug = slug?.trim() ? slug : generateSlug(name);
 
     const exisiting = await prisma.articleTag.findFirst({
       where: {
-        slug,
+        slug: finalSlug,
         deletedAt: null,
       },
     });
@@ -114,7 +105,7 @@ export const createTag = async (req: Request, res: Response) => {
     const tag = await prisma.articleTag.create({
       data: {
         name,
-        slug,
+        slug: finalSlug,
         isActive: true,
       },
     });
@@ -145,7 +136,7 @@ export const updateTag = async (req: Request, res: Response) => {
     }
 
     const { id } = req.params;
-    const { name, isActive } = req.body;
+    const { name, slug, isActive } = req.body;
 
     if (!id) {
       return res.status(400).json({ message: "Tag ID is required" });
@@ -155,11 +146,12 @@ export const updateTag = async (req: Request, res: Response) => {
       return res.status(400).json({ message: "Tag name is required" });
     }
 
-    const slug = generateSlug(name);
+    // const slug = generateSlug(name);
+    const finalSlug = slug?.trim() ? slug : generateSlug(name);
 
     const existing = await prisma.articleTag.findFirst({
       where: {
-        slug,
+        slug: finalSlug,
         deletedAt: null,
         NOT: { id },
       },
@@ -175,7 +167,7 @@ export const updateTag = async (req: Request, res: Response) => {
       where: { id },
       data: {
         name,
-        slug,
+        slug: finalSlug,
         isActive: typeof isActive === "boolean" ? isActive : true,
       },
     });
@@ -200,6 +192,43 @@ export const updateTag = async (req: Request, res: Response) => {
   }
 };
 
+// export const deleteTag = async (req: Request, res: Response) => {
+//   try {
+//     if (!req.user?.id) {
+//       return res.status(401).json({ message: "Unauthorized" });
+//     }
+
+//     const { id } = req.params;
+
+//     if (!id) {
+//       return res.status(400).json({ message: "Tag ID is required" });
+//     }
+
+//     const tag = await prisma.articleTag.findUnique({
+//       where: { id },
+//     });
+
+//     if (!tag) {
+//       return res.status(404).json({ message: "Tag not found" });
+//     }
+
+//     await prisma.articleTag.update({
+//       where: { id },
+//       data: {
+//         deletedAt: new Date(),
+//       },
+//     });
+
+//     res.status(200).json({
+//       status: "success",
+//       message: "Tag deleted successfully",
+//     });
+//   } catch (error) {
+//     console.error("Error deleting tag:", error);
+//     res.status(500).json({ message: "Failed to delete tag" });
+//   }
+// };
+
 export const deleteTag = async (req: Request, res: Response) => {
   try {
     if (!req.user?.id) {
@@ -212,12 +241,31 @@ export const deleteTag = async (req: Request, res: Response) => {
       return res.status(400).json({ message: "Tag ID is required" });
     }
 
-    const tag = await prisma.articleTag.findUnique({
-      where: { id },
+    const tag = await prisma.articleTag.findFirst({
+      where: {
+        id,
+        deletedAt: null,
+      },
+      include: {
+        _count: {
+          select: {
+            articles: true,
+          },
+        },
+      },
     });
 
     if (!tag) {
       return res.status(404).json({ message: "Tag not found" });
+    }
+
+    if (tag._count.articles > 0) {
+      return res.status(409).json({
+        message: `Cannot delete tag. It is being used in ${tag._count.articles} article(s).`,
+        usage: {
+          articles: tag._count.articles,
+        },
+      });
     }
 
     await prisma.articleTag.update({

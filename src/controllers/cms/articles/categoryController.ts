@@ -4,24 +4,7 @@ import {
   buildCMSArticleCategoryPaginationParams,
   buildCMSArticleCategorySortParams,
   buildCMSArticleCategoryWhereCondition,
-} from "../../../utils/queryBuilder/cms/article/categories";
-
-// export const getCategories = async (req: Request, res: Response) => {
-//   try {
-//     if (!req.user?.id) {
-//       return res.status(401).json({ message: "Unauthorized" });
-//     }
-
-//     const categories = await prisma.articleCategory.findMany({
-//       where: { deletedAt: null },
-//       orderBy: { createdAt: "desc" },
-//     });
-//     return res.status(200).json(categories);
-//   } catch (error) {
-//     console.error("Error fetching categories:", error);
-//     res.status(500).json({ message: "Failed to fetch categories" });
-//   }
-// };
+} from "../../../utils/queryBuilder/cms/articles/categories";
 
 export const getCategories = async (req: Request, res: Response) => {
   try {
@@ -45,12 +28,12 @@ export const getCategories = async (req: Request, res: Response) => {
 
     const pagination = buildCMSArticleCategoryPaginationParams(
       page as string,
-      limit as string
+      limit as string,
     );
 
     const orderBy = buildCMSArticleCategorySortParams(
       sortBy as string,
-      order as string
+      order as string,
     );
 
     const [categories, total] = await Promise.all([
@@ -72,8 +55,14 @@ export const getCategories = async (req: Request, res: Response) => {
       },
     });
   } catch (error) {
-    console.error("Error fetching categories:", error);
-    res.status(500).json({ message: "Failed to fetch categories" });
+    console.error("Error fetching article categories:", error);
+
+    const message =
+      process.env.NODE_ENV === "production"
+        ? "Failed to fetch article categories"
+        : (error as Error).message;
+
+    res.status(500).json({ message });
   }
 };
 
@@ -91,17 +80,19 @@ export const createCategory = async (req: Request, res: Response) => {
       return res.status(401).json({ message: "Unauthorized" });
     }
 
-    const { name, description } = req.body;
+    const { name, slug, description } = req.body;
 
     if (!name) {
       return res.status(400).json({ message: "Category name is required" });
     }
 
-    const slug = generateSlug(name);
+    // const slug = generateSlug(name);
+
+    const finalSlug = slug?.trim() ? slug : generateSlug(name);
 
     const existing = await prisma.articleCategory.findFirst({
       where: {
-        slug,
+        slug: finalSlug,
         deletedAt: null,
       },
     });
@@ -115,7 +106,7 @@ export const createCategory = async (req: Request, res: Response) => {
     const category = await prisma.articleCategory.create({
       data: {
         name,
-        slug,
+        slug: finalSlug,
         description,
         isActive: true,
       },
@@ -147,7 +138,7 @@ export const updateCategory = async (req: Request, res: Response) => {
     }
 
     const { id } = req.params;
-    const { name, description, isActive } = req.body;
+    const { name, slug, description, isActive } = req.body;
 
     if (!id) {
       return res.status(400).json({ message: "Category ID is required" });
@@ -157,11 +148,11 @@ export const updateCategory = async (req: Request, res: Response) => {
       return res.status(400).json({ message: "Category name is required" });
     }
 
-    const slug = generateSlug(name);
+    const finalSlug = slug?.trim() ? slug : generateSlug(name);
 
     const existing = await prisma.articleCategory.findFirst({
       where: {
-        slug,
+        slug: finalSlug,
         NOT: { id },
       },
     });
@@ -176,10 +167,10 @@ export const updateCategory = async (req: Request, res: Response) => {
       where: { id },
       data: {
         name,
-        slug,
+        slug: finalSlug,
         description,
         isActive: typeof isActive === "boolean" ? isActive : true,
-        updatedAt: new Date(),
+        // updatedAt: new Date(),
       },
     });
 
@@ -201,6 +192,43 @@ export const updateCategory = async (req: Request, res: Response) => {
   }
 };
 
+// export const deleteCategory = async (req: Request, res: Response) => {
+//   try {
+//     if (!req.user?.id) {
+//       return res.status(401).json({ message: "Unauthorized" });
+//     }
+
+//     const { id } = req.params;
+
+//     if (!id) {
+//       return res.status(400).json({ message: "Category ID is required" });
+//     }
+
+//     const category = await prisma.articleCategory.findUnique({
+//       where: { id },
+//     });
+
+//     if (!category) {
+//       return res.status(404).json({ message: "Category not found" });
+//     }
+
+//     await prisma.articleCategory.update({
+//       where: { id },
+//       data: {
+//         deletedAt: new Date(),
+//       },
+//     });
+
+//     res.status(200).json({
+//       status: "success",
+//       message: "Category deleted successfully",
+//     });
+//   } catch (error) {
+//     console.error("Error deleting category:", error);
+//     res.status(500).json({ message: "Failed to delete category" });
+//   }
+// };
+
 export const deleteCategory = async (req: Request, res: Response) => {
   try {
     if (!req.user?.id) {
@@ -213,12 +241,31 @@ export const deleteCategory = async (req: Request, res: Response) => {
       return res.status(400).json({ message: "Category ID is required" });
     }
 
-    const category = await prisma.articleCategory.findUnique({
-      where: { id },
+    const category = await prisma.articleCategory.findFirst({
+      where: {
+        id,
+        deletedAt: null,
+      },
+      include: {
+        _count: {
+          select: {
+            articles: true,
+          },
+        },
+      },
     });
 
     if (!category) {
       return res.status(404).json({ message: "Category not found" });
+    }
+
+    if (category._count.articles > 0) {
+      return res.status(409).json({
+        message: `Cannot delete category. It is being used in ${category._count.articles} article(s).`,
+        usage: {
+          articles: category._count.articles,
+        },
+      });
     }
 
     await prisma.articleCategory.update({

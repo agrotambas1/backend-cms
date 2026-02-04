@@ -1,0 +1,71 @@
+components:
+  schemas:
+    Industries:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        slug:
+          type: string
+        description:
+          type: string
+        icon:
+          type: string
+          nullable: true
+        color:
+          type: string
+          nullable: true
+        order:
+          type: integer
+        isActive:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        deletedAt:
+          type: string
+          format: date-time
+          nullable: true
+
+    CreateIndustry:
+      type: object
+      properties:
+        name:
+          type: string
+          description: "Industry name"
+        description:
+          type: string
+          nullable: true
+          description: "Industry description (optional)"
+        icon:
+          type: string
+          nullable: true
+          description: "Industry icon (optional)"
+        color:
+          type: string
+          nullable: true
+          description: "Industry description (optional)"
+      required:
+        - name
+
+    UpdateIndustry:
+      type: object
+      properties:
+        name:
+          type: string
+          description: "Industry name"
+        description:
+          type: string
+          nullable: true
+          description: "Industry description (optional)"
+        icon:
+          type: string
+          nullable: true
+          description: "Industry icon (optional)"
+        color:
+          type: string
+          nullable: true
+          description: "Industry description (optional)"

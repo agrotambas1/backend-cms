@@ -3,46 +3,42 @@ export const caseStudyInclude = {
     select: {
       id: true,
       fileName: true,
-      filePath: true,
       altText: true,
       url: true,
     },
   },
-  category: {
+  solutions: {
     select: {
-      id: true,
-      name: true,
-      slug: true,
-      icon: true,
-    },
-  },
-  images: {
-    select: {
-      id: true,
-      order: true,
-      media: {
-        select: {
-          id: true,
-          fileName: true,
-          filePath: true,
-          altText: true,
-          url: true,
-        },
-      },
-    },
-    orderBy: {
-      order: "asc" as const,
-    },
-  },
-  technologies: {
-    include: {
-      technology: {
+      solution: {
         select: {
           id: true,
           name: true,
           slug: true,
-          icon: true,
-          color: true,
+          description: true,
+        },
+      },
+    },
+  },
+  industries: {
+    select: {
+      industry: {
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          description: true,
+        },
+      },
+    },
+  },
+  capabilities: {
+    select: {
+      capability: {
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          description: true,
         },
       },
     },
@@ -59,14 +55,21 @@ export const caseStudyInclude = {
       name: true,
     },
   },
+  seoKeywords: {
+    select: {
+      id: true,
+      keyword: true,
+      order: true,
+    },
+    orderBy: {
+      order: "asc" as const,
+    },
+  },
 };
 
 export const transformCaseStudy = (caseStudy: any) => ({
   ...caseStudy,
-  technologies: caseStudy.technologies.map((ct: any) => ct.technology),
-  images: caseStudy.images.map((img: any) => ({
-    id: img.id,
-    order: img.order,
-    ...img.media,
-  })),
+  solutions: caseStudy.solutions?.map((cs: any) => cs.solution) || [],
+  industries: caseStudy.industries?.map((ci: any) => ci.industry) || [],
+  capabilities: caseStudy.capabilities?.map((cc: any) => cc.capability) || [],
 });

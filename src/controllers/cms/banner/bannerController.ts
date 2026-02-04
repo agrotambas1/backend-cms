@@ -8,29 +8,6 @@ import {
   buildCMSBannerWhereCondition,
 } from "../../../utils/queryBuilder/cms/banner/banner";
 
-// export const getBanners = async (req: Request, res: Response) => {
-//   try {
-//     const banners = await prisma.banner.findMany({
-//       where: {
-//         deletedAt: null,
-//       },
-//       include: bannerInclude,
-//       orderBy: {
-//         createdAt: "desc",
-//       },
-//     });
-
-//     if (!req.user?.id) {
-//       return res.status(401).json({ message: "Unauthorized" });
-//     }
-
-//     res.json(banners);
-//   } catch (error) {
-//     console.error("Error fetching banners:", error);
-//     res.status(500).json({ message: "Failed to fetch banners" });
-//   }
-// };
-
 export const getBanners = async (req: Request, res: Response) => {
   try {
     if (!req.user?.id) {
@@ -53,7 +30,7 @@ export const getBanners = async (req: Request, res: Response) => {
 
     const pagination = buildCMSBannerPaginationParams(
       page as string,
-      limit as string
+      limit as string,
     );
 
     const orderBy = buildCMSBannerSortParams(sortBy as string, order as string);
@@ -78,8 +55,14 @@ export const getBanners = async (req: Request, res: Response) => {
       },
     });
   } catch (error) {
-    console.error("Error fetching banners:", error);
-    res.status(500).json({ message: "Failed to fetch banners" });
+    console.error("Error fetching banner:", error);
+
+    const message =
+      process.env.NODE_ENV === "production"
+        ? "Failed to fetch banner"
+        : (error as Error).message;
+
+    res.status(500).json({ message });
   }
 };
 
@@ -110,7 +93,13 @@ export const getBannerById = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error("Error fetching banner:", error);
-    res.status(500).json({ message: "Failed to fetch banner" });
+
+    const message =
+      process.env.NODE_ENV === "production"
+        ? "Failed to fetch banner"
+        : (error as Error).message;
+
+    res.status(500).json({ message });
   }
 };
 
@@ -317,6 +306,58 @@ export const deleteBanner = async (req: Request, res: Response) => {
     console.error("Error deleting banner:", error);
     return res.status(500).json({
       message: "Failed to delete banner",
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+};
+
+export const bulkDeleteBanner = async (req: Request, res: Response) => {
+  try {
+    if (!req.user?.id) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const { ids } = req.body as { ids?: string[] };
+
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({
+        message: "Banner IDs are required",
+      });
+    }
+
+    const banners = await prisma.banner.findMany({
+      where: {
+        id: { in: ids },
+        deletedAt: null,
+      },
+      select: { id: true },
+    });
+
+    if (banners.length === 0) {
+      return res.status(404).json({
+        message: "No banners found to delete",
+      });
+    }
+
+    await prisma.banner.updateMany({
+      where: {
+        id: { in: banners.map((b) => b.id) },
+      },
+      data: {
+        deletedAt: new Date(),
+        updatedBy: req.user.id,
+      },
+    });
+
+    return res.status(200).json({
+      status: "success",
+      message: `${banners.length} banner(s) deleted successfully`,
+      deletedCount: banners.length,
+    });
+  } catch (error) {
+    console.error("Error bulk deleting banner:", error);
+    return res.status(500).json({
+      message: "Failed to bulk delete banners",
       error: error instanceof Error ? error.message : "Unknown error",
     });
   }

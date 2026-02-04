@@ -1,7 +1,8 @@
 import express from "express";
 import { authMiddleware } from "../../../middleware/authMiddleware";
-import { editorsOnly } from "../../../middleware/permission";
+import { adminOnly, editorsOnly } from "../../../middleware/permission";
 import {
+  bulkDeleteEvent,
   createEvent,
   deleteEvent,
   getEventById,
@@ -20,7 +21,9 @@ router.post("/events", editorsOnly, createEvent);
 
 router.put("/events/:id", editorsOnly, updateEvent);
 
-router.delete("/events/:id", editorsOnly, deleteEvent);
+router.delete("/events/:id", adminOnly, deleteEvent);
+
+router.delete("/events", adminOnly, bulkDeleteEvent);
 
 export default router;
 
@@ -195,6 +198,55 @@ export default router;
  *                   example: Event deleted successfully
  *       404:
  *         description: Event not found
+ *       500:
+ *         description: Server error
+ */
+
+/**
+ * @swagger
+ * /api/cms/events:
+ *   delete:
+ *     summary: Bulk delete events (soft delete)
+ *     tags: [Events]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - ids
+ *             properties:
+ *               ids:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 example: ["uuid-1", "uuid-2", "uuid-3"]
+ *     responses:
+ *       200:
+ *         description: Events deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: success
+ *                 message:
+ *                   type: string
+ *                   example: 3 event(s) deleted successfully
+ *                 deletedCount:
+ *                   type: number
+ *                   example: 3
+ *       400:
+ *         description: Event IDs are required
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: No events found or already deleted
  *       500:
  *         description: Server error
  */

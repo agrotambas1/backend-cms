@@ -31,12 +31,12 @@ export const getPublicEvents = async (req: Request, res: Response) => {
 
     const pagination = buildPublicEventPaginationParams(
       page as string,
-      limit as string
+      limit as string,
     );
 
     const orderBy = buildPublicEventSortParams(
       sortBy as string,
-      order as string
+      order as string,
     );
 
     const [events, total] = await Promise.all([
@@ -56,9 +56,15 @@ export const getPublicEvents = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error("Error fetching events:", error);
+
+    const message =
+      process.env.NODE_ENV === "production"
+        ? "Failed to fetch events"
+        : (error as Error).message;
+
     return res.status(500).json({
       success: false,
-      message: "Failed to fetch events",
+      message,
     });
   }
 };
@@ -96,9 +102,15 @@ export const getPublicEventBySlug = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error("Error fetching event:", error);
+
+    const message =
+      process.env.NODE_ENV === "production"
+        ? "Failed to fetch event"
+        : (error as Error).message;
+
     return res.status(500).json({
       success: false,
-      message: "Failed to fetch event",
+      message,
     });
   }
 };

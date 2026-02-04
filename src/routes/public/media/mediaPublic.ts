@@ -6,6 +6,12 @@ import {
 
 const router = express.Router();
 
+router.get("/media", getMedia);
+
+router.get("/media/:id", getMediaById);
+
+export default router;
+
 /**
  * @swagger
  * /api/public/media:
@@ -24,7 +30,6 @@ const router = express.Router();
  *       500:
  *         description: Server error
  */
-router.get("/media", getMedia);
 
 /**
  * @swagger
@@ -44,6 +49,3 @@ router.get("/media", getMedia);
  *       404:
  *         description: Media not found
  */
-router.get("/media/:id", getMediaById);
-
-export default router;

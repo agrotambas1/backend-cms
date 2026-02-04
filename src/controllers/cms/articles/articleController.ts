@@ -5,37 +5,13 @@ import { validateArticleData } from "../../../validators/articleValidator";
 import {
   articleInclude,
   transformArticle,
-} from "../../../includes/cms/articleInclude";
+} from "../../../includes/cms/articlesInclude";
 import {
   buildCMSArticlePaginationParams,
   buildCMSArticleSortParams,
   buildCMSArticleWhereCondition,
-} from "../../../utils/queryBuilder/cms/article/article";
-
-// export const getArticles = async (req: Request, res: Response) => {
-//   try {
-//     if (!req.user?.id) {
-//       return res.status(401).json({ message: "Unauthorized" });
-//     }
-
-//     const articles = await prisma.article.findMany({
-//       where: {
-//         deletedAt: null,
-//       },
-//       include: articleInclude,
-//       orderBy: {
-//         createdAt: "desc",
-//       },
-//     });
-
-//     const transformedArticles = articles.map(transformArticle);
-
-//     return res.status(200).json(transformedArticles);
-//   } catch (error) {
-//     console.error("Error fetching articles:", error);
-//     res.status(500).json({ message: "Failed to fetch articles" });
-//   }
-// };
+} from "../../../utils/queryBuilder/cms/articles/article";
+import sanitizeHtml from "sanitize-html";
 
 export const getArticles = async (req: Request, res: Response) => {
   try {
@@ -65,12 +41,12 @@ export const getArticles = async (req: Request, res: Response) => {
 
     const pagination = buildCMSArticlePaginationParams(
       page as string,
-      limit as string
+      limit as string,
     );
 
     const orderBy = buildCMSArticleSortParams(
       sortBy as string,
-      order as string
+      order as string,
     );
 
     const [articles, total] = await Promise.all([
@@ -94,7 +70,13 @@ export const getArticles = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error("Error fetching articles:", error);
-    res.status(500).json({ message: "Failed to fetch articles" });
+
+    const message =
+      process.env.NODE_ENV === "production"
+        ? "Failed to fetch articles"
+        : (error as Error).message;
+
+    res.status(500).json({ message });
   }
 };
 
@@ -125,8 +107,34 @@ export const getArticleById = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error("Error fetching article:", error);
-    res.status(500).json({ message: "Failed to fetch article" });
+
+    const message =
+      process.env.NODE_ENV === "production"
+        ? "Failed to fetch article"
+        : (error as Error).message;
+
+    res.status(500).json({ message });
   }
+};
+
+const generateSlug = (text: string) => {
+  return text
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, "")
+    .replace(/\s+/g, "-");
+};
+
+const resolveCreateArticleSlug = (slug?: string, title?: string) => {
+  if (slug && slug.trim()) {
+    return slug.trim().toLowerCase();
+  }
+
+  if (title) {
+    return generateSlug(title).toLowerCase();
+  }
+
+  return null;
 };
 
 export const createArticle = async (req: Request, res: Response) => {
@@ -150,9 +158,29 @@ export const createArticle = async (req: Request, res: Response) => {
       tags,
       seoKeywords,
       thumbnailId,
+      publicationId,
     } = req.body;
 
-    // Parse tags dan keywords
+    const cleanContent =
+      typeof content === "string"
+        ? sanitizeHtml(content, {
+            allowedTags: sanitizeHtml.defaults.allowedTags.concat([
+              "h1",
+              "h2",
+              "h3",
+              "h4",
+              "h5",
+              "h6",
+              "img",
+              "span",
+            ]),
+            allowedAttributes: false,
+            allowedSchemes: ["http", "https", "data"],
+            disallowedTagsMode: "discard",
+            nonBooleanAttributes: ["style"],
+          })
+        : "";
+
     let parsedTags, parsedSeoKeywords;
     try {
       parsedTags = parseTags(tags);
@@ -163,7 +191,6 @@ export const createArticle = async (req: Request, res: Response) => {
       });
     }
 
-    // Validasi
     const validationErrors = validateArticleData({
       title,
       slug,
@@ -180,7 +207,6 @@ export const createArticle = async (req: Request, res: Response) => {
       });
     }
 
-    // Check category exists
     const categoryExists = await prisma.articleCategory.findUnique({
       where: { id: categoryId },
     });
@@ -189,9 +215,14 @@ export const createArticle = async (req: Request, res: Response) => {
       return res.status(400).json({ message: "Category does not exist" });
     }
 
-    // Check slug unique
+    const finalSlug = resolveCreateArticleSlug(slug, title);
+
+    if (!finalSlug) {
+      return res.status(400).json({ message: "Slug is required" });
+    }
+
     const existingArticle = await prisma.article.findFirst({
-      where: { slug, deletedAt: null },
+      where: { slug: finalSlug, deletedAt: null },
     });
 
     if (existingArticle) {
@@ -213,13 +244,26 @@ export const createArticle = async (req: Request, res: Response) => {
       selectedThumbnailId = thumbnailId;
     }
 
-    // Prepare data
+    let selectedPublicationId: string | null = null;
+    if (publicationId) {
+      const mediaExists = await prisma.media.findUnique({
+        where: { id: publicationId },
+      });
+      if (!mediaExists) {
+        return res
+          .status(400)
+          .json({ message: "Selected media does not exist" });
+      }
+      selectedPublicationId = publicationId;
+    }
+
     const articleData: any = {
       title,
-      slug,
+      slug: finalSlug,
       excerpt,
-      content,
+      content: cleanContent,
       thumbnailId: selectedThumbnailId,
+      publicationId: selectedPublicationId,
       metaTitle,
       metaDescription,
       status,
@@ -287,6 +331,7 @@ export const updateArticle = async (req: Request, res: Response) => {
       excerpt,
       content,
       thumbnailId,
+      publicationId,
       metaTitle,
       metaDescription,
       status,
@@ -298,7 +343,6 @@ export const updateArticle = async (req: Request, res: Response) => {
       seoKeywords,
     } = req.body;
 
-    // Check article exists
     const existingArticle = await prisma.article.findFirst({
       where: { id, deletedAt: null },
     });
@@ -307,7 +351,26 @@ export const updateArticle = async (req: Request, res: Response) => {
       return res.status(404).json({ message: "Article not found" });
     }
 
-    // Parse tags dan keywords
+    const cleanContent =
+      typeof content === "string"
+        ? sanitizeHtml(content, {
+            allowedTags: sanitizeHtml.defaults.allowedTags.concat([
+              "h1",
+              "h2",
+              "h3",
+              "h4",
+              "h5",
+              "h6",
+              "img",
+              "span",
+            ]),
+            allowedAttributes: false,
+            allowedSchemes: ["http", "https", "data"],
+            disallowedTagsMode: "discard",
+            nonBooleanAttributes: ["style"],
+          })
+        : existingArticle.content;
+
     let parsedTags, parsedSeoKeywords;
     try {
       parsedTags = parseTags(tags);
@@ -318,7 +381,6 @@ export const updateArticle = async (req: Request, res: Response) => {
       });
     }
 
-    // Validasi
     const validationErrors = validateArticleData({
       title,
       slug,
@@ -335,7 +397,6 @@ export const updateArticle = async (req: Request, res: Response) => {
       });
     }
 
-    // Check category exists
     if (categoryId) {
       const categoryExists = await prisma.articleCategory.findUnique({
         where: { id: categoryId },
@@ -346,11 +407,14 @@ export const updateArticle = async (req: Request, res: Response) => {
       }
     }
 
-    // Check slug unique
+    const finalSlug = slug?.trim()
+      ? slug.trim().toLowerCase()
+      : existingArticle.slug;
+
     if (slug) {
       const slugExists = await prisma.article.findFirst({
         where: {
-          slug,
+          slug: finalSlug,
           NOT: { id },
           deletedAt: null,
         },
@@ -373,13 +437,25 @@ export const updateArticle = async (req: Request, res: Response) => {
       selectedThumbnailId = thumbnailId;
     }
 
-    // Prepare update data
+    let selectedPublicationId: string | null = existingArticle.publicationId;
+    if (publicationId) {
+      const mediaExists = await prisma.media.findUnique({
+        where: { id: publicationId },
+      });
+      if (!mediaExists)
+        return res
+          .status(400)
+          .json({ message: "Selected media does not exist" });
+      selectedPublicationId = publicationId;
+    }
+
     const articleData: any = {
       title,
-      slug,
+      slug: finalSlug,
       excerpt,
-      content,
+      content: cleanContent,
       thumbnailId: selectedThumbnailId,
+      publicationId: selectedPublicationId,
       metaTitle,
       metaDescription,
       status,
@@ -471,6 +547,58 @@ export const deleteArticle = async (req: Request, res: Response) => {
     console.error("Error deleting article:", error);
     return res.status(500).json({
       message: "Failed to delete article",
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+};
+
+export const bulkDeleteArticle = async (req: Request, res: Response) => {
+  try {
+    if (!req.user?.id) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const { ids } = req.body as { ids?: string[] };
+
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({
+        message: "Article IDs are required",
+      });
+    }
+
+    const articles = await prisma.article.findMany({
+      where: {
+        id: { in: ids },
+        deletedAt: null,
+      },
+      select: { id: true },
+    });
+
+    if (articles.length === 0) {
+      return res.status(404).json({
+        message: "No articles found or already deleted",
+      });
+    }
+
+    await prisma.article.updateMany({
+      where: {
+        id: { in: articles.map((a) => a.id) },
+      },
+      data: {
+        deletedAt: new Date(),
+        updatedBy: req.user.id,
+      },
+    });
+
+    return res.status(200).json({
+      status: "success",
+      message: `${articles.length} article(s) deleted successfully`,
+      deletedCount: articles.length,
+    });
+  } catch (error) {
+    console.error("Error bulk deleting article:", error);
+    return res.status(500).json({
+      message: "Failed to bulk delete articles",
       error: error instanceof Error ? error.message : "Unknown error",
     });
   }

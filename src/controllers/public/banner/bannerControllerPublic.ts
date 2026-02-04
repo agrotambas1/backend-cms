@@ -20,8 +20,17 @@ export const getBanners = async (req: Request, res: Response) => {
       data: banners,
     });
   } catch (error) {
-    console.error("Error fetching banners:", error);
-    res.status(500).json({ message: "Failed to fetch banners" });
+    console.error("Error fetching banner:", error);
+
+    const message =
+      process.env.NODE_ENV === "production"
+        ? "Failed to fetch banner"
+        : (error as Error).message;
+
+    return res.status(500).json({
+      success: false,
+      message,
+    });
   }
 };
 
@@ -48,6 +57,15 @@ export const getBannerById = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error("Error fetching banner:", error);
-    res.status(500).json({ message: "Failed to fetch banner" });
+
+    const message =
+      process.env.NODE_ENV === "production"
+        ? "Failed to fetch banner"
+        : (error as Error).message;
+
+    return res.status(500).json({
+      success: false,
+      message,
+    });
   }
 };
