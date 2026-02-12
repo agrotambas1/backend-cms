@@ -38,11 +38,10 @@ const PORT = process.env.PORT || 3001;
 
 // CORS
 const cmsOrigins = [
-  process.env.CMS_FRONTEND_URL || "http://localhost:3005",
+  process.env.CMS_FRONTEND_URL,
   process.env.CMS_FRONTEND_PROD_URL,
   `http://localhost:${PORT}`,
-  // `http://192.168.1.10:3000`,
-  ,
+  // `http://192.168.1.4:3000`,
 ].filter(Boolean);
 
 const publicOrigins = [
