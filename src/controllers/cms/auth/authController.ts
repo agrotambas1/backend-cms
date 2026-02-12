@@ -20,6 +20,10 @@ export const loginUser = async (req: Request, res: Response) => {
     },
   });
 
+  if (!user || user.deletedAt !== null) {
+    return res.status(401).json({ message: "User does not exist" });
+  }
+
   if (!user) {
     return res.status(401).json({ message: "Invalid credentials" });
   }
@@ -28,6 +32,10 @@ export const loginUser = async (req: Request, res: Response) => {
 
   if (!isPasswordValid) {
     return res.status(401).json({ message: "Invalid credentials" });
+  }
+
+  if (!user.isActive) {
+    return res.status(403).json({ message: "User is inactive" });
   }
 
   if (!user.isActive) {
@@ -66,6 +74,18 @@ export const logoutUser = async (req: Request, res: Response) => {
 export const me = async (req: Request, res: Response) => {
   if (!req.user) {
     return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  const user = await prisma.user.findFirst({
+    where: { id: req.user.id },
+  });
+
+  if (!user || user.deletedAt !== null) {
+    return res.status(401).json({ message: "User does not exist" });
+  }
+
+  if (!user.isActive) {
+    return res.status(403).json({ message: "User is inactive" });
   }
 
   return res.json({

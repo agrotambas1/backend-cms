@@ -4,21 +4,19 @@ export const caseStudyPublicSelect = {
   id: true,
   title: true,
   slug: true,
-  description: true,
-  // content: true,
-
+  overview: true,
+  problem: true,
+  solution: true,
+  outcomesDesc: true,
+  outcomes: true,
   client: true,
-  // projectUrl: true,
-  // demoURL: true,
-  duration: true,
-  year: true,
-
-  // status: true,
+  status: true,
   publishedAt: true,
   isFeatured: true,
-  // order: true,
-
   createdAt: true,
+  seoKeywords: true,
+  metaTitle: true,
+  metaDescription: true,
 
   thumbnailMedia: {
     select: {
@@ -28,43 +26,28 @@ export const caseStudyPublicSelect = {
     },
   },
 
-  category: {
+  publication: {
+    select: {
+      id: true,
+      fileName: true,
+      altText: true,
+      url: true,
+    },
+  },
+  service: {
     select: {
       id: true,
       name: true,
       slug: true,
-      icon: true,
+      description: true,
     },
   },
-
-  // images: {
-  //   orderBy: {
-  //     order: "asc" as const,
-  //   },
-  //   select: {
-  //     id: true,
-  //     order: true,
-  //     media: {
-  //       select: {
-  //         id: true,
-  //         url: true,
-  //         altText: true,
-  //       },
-  //     },
-  //   },
-  // },
-
-  technologies: {
+  industry: {
     select: {
-      technology: {
-        select: {
-          id: true,
-          name: true,
-          slug: true,
-          icon: true,
-          color: true,
-        },
-      },
+      id: true,
+      name: true,
+      slug: true,
+      description: true,
     },
   },
 
@@ -80,17 +63,19 @@ export const caseStudyPublicDetailSelect = {
   id: true,
   title: true,
   slug: true,
-  description: true,
-  content: true,
-
+  overview: true,
+  problem: true,
+  solution: true,
+  outcomesDesc: true,
+  outcomes: true,
   client: true,
-  projectUrl: true,
-  demoURL: true,
-  duration: true,
-  year: true,
-
+  status: true,
   publishedAt: true,
   isFeatured: true,
+  createdAt: true,
+  seoKeywords: true,
+  metaTitle: true,
+  metaDescription: true,
 
   thumbnailMedia: {
     select: {
@@ -102,44 +87,29 @@ export const caseStudyPublicDetailSelect = {
     },
   },
 
-  category: {
+  publication: {
+    select: {
+      id: true,
+      fileName: true,
+      altText: true,
+      url: true,
+    },
+  },
+
+  service: {
     select: {
       id: true,
       name: true,
       slug: true,
-      icon: true,
       description: true,
     },
   },
-
-  images: {
-    orderBy: {
-      order: "asc" as const,
-    },
+  industry: {
     select: {
       id: true,
-      order: true,
-      media: {
-        select: {
-          id: true,
-          url: true,
-          altText: true,
-        },
-      },
-    },
-  },
-
-  technologies: {
-    select: {
-      technology: {
-        select: {
-          id: true,
-          name: true,
-          slug: true,
-          icon: true,
-          color: true,
-        },
-      },
+      name: true,
+      slug: true,
+      description: true,
     },
   },
 
@@ -153,11 +123,6 @@ export const caseStudyPublicDetailSelect = {
 
 export const transformCaseStudyPublic = (caseStudy: any) => ({
   ...caseStudy,
-  technologies: caseStudy.technologies?.map((ct: any) => ct.technology) || [],
-  images:
-    caseStudy.images?.map((img: any) => ({
-      id: img.id,
-      order: img.order,
-      ...img.media,
-    })) || [],
+  outcomes: caseStudy.outcomes || [],
+  seoKeywords: caseStudy.seoKeywords || [],
 });

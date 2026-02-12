@@ -7,6 +7,7 @@ import {
   buildCMSMediaWhereCondition,
 } from "../../../utils/queryBuilder/cms/media/media";
 import path from "path";
+import multer from "multer";
 
 export const getMedia = async (req: Request, res: Response) => {
   try {
@@ -130,6 +131,16 @@ export const uploadMedia = async (req: Request, res: Response) => {
     res.status(201).json(media);
   } catch (error) {
     console.error("Error uploading media:", error);
+    if (error instanceof multer.MulterError) {
+      if (error.code === "LIMIT_FILE_SIZE") {
+        return res.status(400).json({
+          message: "File size exceeds maximum limit of 10MB",
+        });
+      }
+      return res.status(400).json({
+        message: error.message,
+      });
+    }
     res.status(500).json({ message: "Failed to upload media" });
   }
 };
@@ -192,32 +203,18 @@ export const updateMedia = async (req: Request, res: Response) => {
 };
 
 const checkMediaUsage = async (mediaId: string) => {
-  const [
-    insightThumb,
-    eventThumb,
-    caseStudyThumb,
-    eventImages,
-    caseStudyImages,
-  ] = await Promise.all([
-    prisma.insight.count({ where: { thumbnailId: mediaId } }),
+  const [articleThumb, eventThumb, caseStudyThumb] = await Promise.all([
+    prisma.article.count({ where: { thumbnailId: mediaId } }),
     prisma.event.count({ where: { thumbnailId: mediaId } }),
     prisma.caseStudy.count({ where: { thumbnailId: mediaId } }),
-    prisma.eventImage.count({ where: { mediaId: mediaId } }),
-    prisma.caseStudyImage.count({ where: { imageId: mediaId } }),
   ]);
 
   return {
-    insightThumb,
+    articleThumb,
     eventThumb,
     caseStudyThumb,
-    eventImages,
-    caseStudyImages,
-    total:
-      insightThumb +
-      eventThumb +
-      caseStudyThumb +
-      eventImages +
-      caseStudyImages,
+
+    total: articleThumb + eventThumb + caseStudyThumb,
   };
 };
 
@@ -256,7 +253,7 @@ export const deleteMedia = async (req: Request, res: Response) => {
 
     if (usage.total > 0) {
       return res.status(400).json({
-        message: "Media masih digunakan",
+        message: "Media is in use and cannot be deleted",
         usage,
       });
     }
@@ -317,7 +314,7 @@ export const bulkDeleteMedia = async (req: Request, res: Response) => {
 
     if (deletable.length === 0) {
       return res.status(400).json({
-        message: "Semua media masih digunakan",
+        message: "Media is in use and cannot be deleted",
         blocked,
       });
     }

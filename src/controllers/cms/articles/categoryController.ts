@@ -5,6 +5,7 @@ import {
   buildCMSArticleCategorySortParams,
   buildCMSArticleCategoryWhereCondition,
 } from "../../../utils/queryBuilder/cms/articles/categories";
+import { generateSlug } from "../../../utils/generateSlug";
 
 export const getCategories = async (req: Request, res: Response) => {
   try {
@@ -64,14 +65,6 @@ export const getCategories = async (req: Request, res: Response) => {
 
     res.status(500).json({ message });
   }
-};
-
-const generateSlug = (text: string) => {
-  return text
-    .toLowerCase()
-    .trim()
-    .replace(/[^\w\s-]/g, "")
-    .replace(/\s+/g, "-");
 };
 
 export const createCategory = async (req: Request, res: Response) => {

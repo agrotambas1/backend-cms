@@ -13,9 +13,9 @@ const router = express.Router();
 
 router.use(authMiddleware);
 
-router.get("/industries", adminOnly, getIndustries);
+router.get("/industries", getIndustries);
 
-router.get("/industries/:id", adminOnly, getIndustryById);
+// router.get("/industries/:id", getIndustryById);
 
 router.post("/industries", adminOnly, createIndustry);
 
@@ -55,35 +55,35 @@ export default router;
  *         description: Server error
  */
 
-/**
- * @swagger
- * /api/cms/industries/{id}:
- *   get:
- *     summary: Get a solution by ID
- *     tags: [Industries]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *         description: Article ID
- *     responses:
- *       200:
- *         description: A list of tags
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/Industry'
- *       401:
- *         description: Unauthorized
- *       500:
- *         description: Server error
- */
+// /**
+//  * @swagger
+//  * /api/cms/industries/{id}:
+//  *   get:
+//  *     summary: Get a solution by ID
+//  *     tags: [Industries]
+//  *     security:
+//  *       - bearerAuth: []
+//  *     parameters:
+//  *       - in: path
+//  *         name: id
+//  *         required: true
+//  *         schema:
+//  *           type: string
+//  *         description: Article ID
+//  *     responses:
+//  *       200:
+//  *         description: A list of tags
+//  *         content:
+//  *           application/json:
+//  *             schema:
+//  *               type: array
+//  *               items:
+//  *                 $ref: '#/components/schemas/Industry'
+//  *       401:
+//  *         description: Unauthorized
+//  *       500:
+//  *         description: Server error
+//  */
 
 /**
  * @swagger

@@ -6,8 +6,6 @@ interface AuthJwtPayload extends jwt.JwtPayload {
   id: string;
 }
 
-// Read the token from the request
-// Check if toke is valid
 export const authMiddleware = async (
   req: Request,
   res: Response,
@@ -29,7 +27,6 @@ export const authMiddleware = async (
   }
 
   try {
-    // Verify the token and extract the user Id
     const decoded = jwt.verify(
       token,
       process.env.JWT_SECRET as string,

@@ -6,6 +6,11 @@ components:
         - id
         - title
         - slug
+        - problem
+        - solution
+        - outcomes
+        - metaTitle
+        - metaDescription
       properties:
         id:
           type: string
@@ -14,46 +19,55 @@ components:
           type: string
         slug:
           type: string
-        description:
+        overview:
           type: string
-          nullable: true
-        content:
+          description: "Overview statement (rich text)"
+        problem:
           type: string
-          nullable: true
+          description: "Problem statement (rich text)"
+        solution:
+          type: string
+          description: "Solution description (rich text)"
+        outcomes:
+          type: array
+          description: "Array of KPIs and results"
+          items:
+            type: object
+            properties:
+              metric:
+                type: string
+                example: "Revenue increase"
+              value:
+                type: string
+                example: "30%"
         client:
           type: string
           nullable: true
-        projectUrl:
-          type: string
-          nullable: true
-        demoUrl:
-          type: string
-          nullable: true
-        duration:
-          type: string
-          nullable: true
-        year:
-          type: integer
-          nullable: true
+          description: "Client name or sector"
         status:
           type: string
           enum: [draft, published, scheduled, archived]
+          default: draft
         metaTitle:
           type: string
-          nullable: true
-          description: SEO meta title
+          description: "SEO meta title (required)"
         metaDescription:
           type: string
+          description: "SEO meta description (required)"
+        seoKeywords:
+          type: array
           nullable: true
-          description: SEO meta description
+          description: "Array of SEO keywords (max 10)"
+          items:
+            type: string
+            example: "digital transformation"
         publishedAt:
           type: string
           format: date-time
           nullable: true
         isFeatured:
           type: boolean
-        order:
-          type: integer
+          default: false
         thumbnailMedia:
           type: object
           nullable: true
@@ -63,25 +77,34 @@ components:
               format: uuid
             fileName:
               type: string
-            filePath:
+            altText:
+              type: string
+              nullable: true
+            url:
+              type: string
+        publication:
+          type: object
+          nullable: true
+          description: "Publication media (PDF, etc)"
+          properties:
+            id:
+              type: string
+              format: uuid
+            fileName:
               type: string
             altText:
               type: string
               nullable: true
             url:
               type: string
-        solutions:
+        serviceId:
           type: string
-          example: '["solution-uuid-1", "solution-uuid-2"]'
-          description: JSON string array of solution IDs
-        industries:
+          format: uuid
+          description: Case Study service
+        industryId:
           type: string
-          example: '["industry-uuid-1", "industry-uuid-2"]'
-          description: JSON string array of industry IDs
-        capabilities:
-          type: string
-          example: '["capability-uuid-1", "capability-uuid-2"]'
-          description: JSON string array of capability IDs
+          format: uuid
+          description: Case Study industry
         creator:
           type: object
           properties:
@@ -99,21 +122,13 @@ components:
               format: uuid
             name:
               type: string
-        seoKeywords:
-          type: array
-          items:
-            type: object
-            properties:
-              id:
-                type: string
-              keyword:
-                type: string
-              order:
-                type: integer
         createdAt:
           type: string
           format: date-time
         updatedAt:
+          type: string
+          format: date-time
+        deletedAt:
           type: string
           format: date-time
           nullable: true
@@ -123,10 +138,15 @@ components:
       required:
         - title
         - slug
-        - description
-        - content
-        - client
+        - overview
+        - problem
+        - solution
+        - outcomes
+        - metaTitle
+        - metaDescription
         - status
+        - service
+        - industry
       properties:
         title:
           type: string
@@ -134,48 +154,73 @@ components:
         slug:
           type: string
           description: "URL-friendly slug (must be unique)"
-        description:
+        overview:
           type: string
-          description: "Short description of the case study"
-        content:
+          description: "Overview statement (rich text, required)"
+          maxLength: 15000
+        problem:
           type: string
-          description: "Full case study content (supports HTML/Markdown)"
+          description: "Problem statement (rich text, required)"
+          maxLength: 15000
+        solution:
+          type: string
+          description: "Solution description (rich text, required)"
+          maxLength: 15000
+        outcomes:
+          type: array
+          description: "Array of KPIs and results (required, min 1)"
+          minItems: 1
+          items:
+            type: object
+            required:
+              - metric
+              - value
+            properties:
+              metric:
+                type: string
+                example: "Revenue increase"
+              value:
+                type: string
+                example: "30%"
+              description:
+                type: string
+                nullable: true
         client:
           type: string
-          description: "Client name"
-        projectUrl:
-          type: string
           nullable: true
-          description: "Live project URL"
-        demoUrl:
-          type: string
-          nullable: true
-          description: "Demo URL"
-        duration:
-          type: string
-          description: "Project duration"
-        year:
-          type: integer
-          description: "Project year"
+          description: "Client name or sector"
         thumbnailId:
           type: string
           format: uuid
           nullable: true
           description: "Media ID for thumbnail image"
+        publicationId:
+          type: string
+          format: uuid
+          nullable: true
+          description: "Media ID for publication file (PDF, etc)"
         status:
           type: string
           enum: [draft, published, scheduled, archived]
+          default: draft
           description: "Publication status"
         metaTitle:
           type: string
-          nullable: true
-          example: "SEO Title"
-          description: SEO meta title
+          description: "SEO meta title (required, max 60 chars)"
+          maxLength: 60
         metaDescription:
           type: string
+          description: "SEO meta description (required, max 160 chars)"
+          maxLength: 160
+        seoKeywords:
+          type: array
           nullable: true
-          example: "SEO Description"
-          description: SEO meta description
+          description: "Array of SEO keywords (optional, max 10)"
+          maxItems: 10
+          items:
+            type: string
+            maxLength: 50
+            example: "digital transformation"
         publishedAt:
           type: string
           format: date-time
@@ -184,27 +229,24 @@ components:
         isFeatured:
           type: boolean
           nullable: true
+          default: false
           description: "Whether the case study is featured"
-        order:
-          type: integer
-          nullable: true
-          description: "Display order (higher = shown first)"
-        solutions:
+        serviceId:
           type: string
-          example: '["solution-uuid-1", "solution-uuid-2"]'
-          description: JSON string array of solution IDs
-        industries:
+          format: uuid
+          description: Article service
+        industryId:
           type: string
-          example: '["industry-uuid-1", "industry-uuid-2"]'
-          description: JSON string array of industry IDs
+          format: uuid
+          description: Article industry
         capabilities:
-          type: string
-          example: '["capability-uuid-1", "capability-uuid-2"]'
-          description: JSON string array of capability IDs
-        seoKeywords:
-          type: string
-          example: '[{"keyword": "typescript", "order": 0}]'
-          description: JSON string array of SEO keywords
+          type: array
+          nullable: true
+          description: "Array of capability UUIDs (optional)"
+          items:
+            type: string
+            format: uuid
+          example: ["550e8400-e29b-41d4-a716-446655440002"]
 
     UpdateCaseStudy:
       type: object
@@ -212,49 +254,76 @@ components:
         title:
           type: string
           description: "Case study title"
+          maxLength: 255
         slug:
           type: string
           description: "URL-friendly slug (must be unique)"
-        description:
+          pattern: "^[a-z0-9-]+$"
+          maxLength: 255
+        overview:
           type: string
-          description: "Short description of the case study"
-        content:
+          description: "Overview statement (rich text)"
+          maxLength: 15000
+        problem:
           type: string
-          description: "Full case study content (supports HTML/Markdown)"
+          description: "Problem statement (rich text)"
+          maxLength: 15000
+        solution:
+          type: string
+          description: "Solution description (rich text)"
+          maxLength: 15000
+        outcomes:
+          type: array
+          description: "Array of KPIs and results"
+          items:
+            type: object
+            required:
+              - metric
+              - value
+            properties:
+              metric:
+                type: string
+                example: "Revenue increase"
+              value:
+                type: string
+                example: "30%"
+              description:
+                type: string
+                nullable: true
         client:
           type: string
-          description: "Client name"
-        projectUrl:
-          type: string
           nullable: true
-          description: "Live project URL"
-        demoUrl:
-          type: string
-          nullable: true
-          description: "Demo URL"
-        duration:
-          type: string
-          description: "Project duration"
-        year:
-          type: integer
-          description: "Project year"
+          description: "Client name or sector"
         thumbnailId:
           type: string
           format: uuid
           nullable: true
           description: "Media ID for thumbnail image"
+        publicationId:
+          type: string
+          format: uuid
+          nullable: true
+          description: "Media ID for publication file"
         status:
           type: string
           enum: [draft, published, scheduled, archived]
           description: "Publication status"
         metaTitle:
           type: string
-          nullable: true
-          description: SEO meta title
+          description: "SEO meta title (max 60 chars)"
+          maxLength: 60
         metaDescription:
           type: string
+          description: "SEO meta description (max 160 chars)"
+          maxLength: 160
+        seoKeywords:
+          type: array
           nullable: true
-          description: SEO meta description
+          description: "Array of SEO keywords (max 10)"
+          maxItems: 10
+          items:
+            type: string
+            maxLength: 50
         publishedAt:
           type: string
           format: date-time
@@ -264,23 +333,11 @@ components:
           type: boolean
           nullable: true
           description: "Whether the case study is featured"
-        order:
-          type: integer
-          nullable: true
-          description: "Display order (higher = shown first)"
-        solutions:
+        serviceId:
           type: string
-          example: '["solution-uuid-1", "solution-uuid-2"]'
-          description: JSON string array of solution IDs
-        industries:
+          format: uuid
+          description: Case Study service
+        industryId:
           type: string
-          example: '["industry-uuid-1", "industry-uuid-2"]'
-          description: JSON string array of industry IDs
-        capabilities:
-          type: string
-          example: '["capability-uuid-1", "capability-uuid-2"]'
-          description: JSON string array of capability IDs
-        seoKeywords:
-          type: string
-          example: '[{"keyword": "typescript", "order": 0}]'
-          description: JSON string array of SEO keywords
+          format: uuid
+          description: Case Study industry

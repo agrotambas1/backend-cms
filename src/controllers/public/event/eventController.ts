@@ -19,14 +19,16 @@ export const getPublicEvents = async (req: Request, res: Response) => {
       sortBy,
       order,
       search,
-      isFeatured,
-      upcoming,
+      serviceSlug,
+      industrySlug,
+      timeFilter,
     } = req.query;
 
     const where = buildPublicEventWhereCondition({
       search: search as string,
-      isFeatured: isFeatured as string,
-      upcoming: upcoming as string,
+      serviceSlug: serviceSlug as string,
+      industrySlug: industrySlug as string,
+      timeFilter: timeFilter as "upcoming" | "past" | "homepage",
     });
 
     const pagination = buildPublicEventPaginationParams(
@@ -48,6 +50,11 @@ export const getPublicEvents = async (req: Request, res: Response) => {
       }),
       prisma.event.count({ where }),
     ]);
+
+    res.set({
+      "Cache-Control": "public, max-age=300, s-maxage=600",
+      "X-Total-Count": total.toString(),
+    });
 
     return res.status(200).json({
       success: true,
@@ -95,6 +102,10 @@ export const getPublicEventBySlug = async (req: Request, res: Response) => {
         message: "Event not found",
       });
     }
+
+    res.set({
+      "Cache-Control": "public, max-age=600, s-maxage=3600",
+    });
 
     return res.status(200).json({
       success: true,

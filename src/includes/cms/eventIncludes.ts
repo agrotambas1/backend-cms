@@ -10,16 +10,20 @@ export const eventInclude = {
       url: true,
     },
   },
-  solutions: {
+  service: {
     select: {
-      solution: {
-        select: {
-          id: true,
-          name: true,
-          slug: true,
-          description: true,
-        },
-      },
+      id: true,
+      name: true,
+      slug: true,
+      description: true,
+    },
+  },
+  industry: {
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+      description: true,
     },
   },
   creator: { select: { id: true, name: true, username: true } },
@@ -28,5 +32,4 @@ export const eventInclude = {
 
 export const transformEvent = (event: any) => ({
   ...event,
-  solutions: event.solutions?.map((cs: any) => cs.solution) || [],
 });

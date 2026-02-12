@@ -1,146 +1,114 @@
-// const VALID_STATUSES = ["draft", "published", "scheduled", "archived"];
-// const VALID_LOCATION_TYPES = ["online", "offline"];
+import { z } from "zod";
 
-// export const validateEventData = (data: {
-//   title?: string;
-//   slug?: string;
-//   eventStart?: string | Date;
-//   eventEnd?: string | Date;
-//   locationType?: string;
-//   location?: string;
-//   meetingUrl?: string;
-//   status?: string;
-// }) => {
-//   const errors: string[] = [];
+const VALID_STATUSES = ["draft", "published", "archived"] as const;
+const VALID_LOCATION_TYPES = ["online", "offline", "hybrid"] as const;
+const VALID_EVENT_TYPES = ["webinar", "conference", "roundtable"] as const;
 
-//   if (!data.title) errors.push("Title is required");
-//   if (!data.slug) errors.push("Slug is required");
-//   if (!data.eventStart) errors.push("Event start date is required");
-//   if (!data.eventEnd) errors.push("Event end date is required");
-//   if (!data.locationType) errors.push("Location type is required");
-//   if (!data.status) errors.push("Status is required");
+const emptyStringToNull = z
+  .string()
+  .transform((val) => (val === "" ? null : val))
+  .nullable()
+  .optional();
 
-//   if (data.status && !VALID_STATUSES.includes(data.status)) {
-//     errors.push(`Invalid status. Must be one of: ${VALID_STATUSES.join(", ")}`);
-//   }
+const eventSchema = z.object({
+  eventName: z
+    .string()
+    .min(1, "Title cannot be empty")
+    .max(255, "Title is too long (max 255 characters)")
+    .optional(),
+  slug: z
+    .string()
+    .min(1, "Slug cannot be empty")
+    .max(255, "Slug is too long (max 255 characters)")
+    .regex(
+      /^[a-z0-9-]+$/,
+      "Slug must contain only lowercase letters, numbers, and hyphens",
+    )
+    .optional(),
+  excerpt: emptyStringToNull,
+  description: z.string().min(1, "Description is required"),
+  eventDate: z.coerce.date({ error: "Invalid event date format" }).optional(),
+  locationType: z
+    .enum(VALID_LOCATION_TYPES, {
+      message: `Invalid location type. Must be one of: ${VALID_LOCATION_TYPES.join(", ")}`,
+    })
+    .optional(),
+  location: emptyStringToNull,
+  meetingUrl: emptyStringToNull,
+  registrationUrl: emptyStringToNull,
+  thumbnailId: emptyStringToNull,
+  quota: z.number().optional().nullable(),
+  status: z
+    .enum(VALID_STATUSES, {
+      message: `Invalid status. Must be one of: ${VALID_STATUSES.join(", ")}`,
+    })
+    .optional(),
+  eventType: z.enum(VALID_EVENT_TYPES, {
+    message: `Invalid event type. Must be one of: ${VALID_EVENT_TYPES.join(", ")}`,
+  }),
+  serviceId: z.preprocess(
+    (val) => (val === "none" || val === "" ? null : val),
+    z.string().uuid("Invalid solution ID").optional().nullable(),
+  ),
+  industryId: z.preprocess(
+    (val) => (val === "none" || val === "" ? null : val),
+    z.string().uuid("Invalid industry ID").optional().nullable(),
+  ),
+});
 
-//   if (data.locationType && !VALID_LOCATION_TYPES.includes(data.locationType)) {
-//     errors.push(
-//       `Invalid location type. Must be one of: ${VALID_LOCATION_TYPES.join(
-//         ", "
-//       )}`
-//     );
-//   }
-
-//   if (data.locationType === "online" && !data.meetingUrl) {
-//     errors.push("Meeting URL is required for online events");
-//   }
-
-//   if (data.locationType === "offline" && !data.location) {
-//     errors.push("Location is required for offline events");
-//   }
-
-//   return errors;
-// };
-
-const VALID_STATUSES = ["draft", "published", "scheduled", "archived"];
-const VALID_LOCATION_TYPES = ["online", "offline", "hybrid"];
-const VALID_EVENT_TYPES = ["webinar", "conference", "roundtable"];
+const requiredFields: (keyof z.infer<typeof eventSchema>)[] = [
+  "eventName",
+  "slug",
+  "eventDate",
+  "locationType",
+  "status",
+];
 
 export const validateEventData = (
   data: {
-    title?: string;
+    eventName?: string;
     slug?: string;
-    eventStart?: string | Date;
-    eventEnd?: string | Date;
+    excerpt?: string;
+    description?: string;
+    thumbnailId?: string;
+    registrationUrl?: string;
+    quota?: number;
+    eventDate?: string | Date;
     locationType?: string;
     location?: string;
     meetingUrl?: string;
     status?: string;
     eventType?: string;
-    solutions?: any;
+    serviceId?: string;
+    industryId?: string;
   },
   isUpdate = false,
 ) => {
   const errors: string[] = [];
 
   if (!isUpdate) {
-    if (!data.title) errors.push("Title is required");
+    if (!data.eventName) errors.push("Title is required");
     if (!data.slug) errors.push("Slug is required");
-    if (!data.eventStart) errors.push("Event start date is required");
-    if (!data.eventEnd) errors.push("Event end date is required");
+    if (!data.eventDate) errors.push("Event date is required");
     if (!data.locationType) errors.push("Location type is required");
     if (!data.status) errors.push("Status is required");
+
+    if (errors.length > 0) return errors;
   }
 
-  if (data.title !== undefined) {
-    if (data.title.trim().length === 0) {
-      errors.push("Title cannot be empty");
-    }
-    if (data.title.length > 255) {
-      errors.push("Title is too long (max 255 characters)");
-    }
-  }
+  const result = eventSchema.safeParse(data);
 
-  if (data.slug !== undefined && data.slug.trim()) {
-    if (data.slug.length > 255) {
-      errors.push("Slug is too long (max 255 characters)");
-    }
-    if (!/^[a-z0-9-]*$/.test(data.slug)) {
-      errors.push(
-        "Slug must contain only lowercase letters, numbers, and hyphens",
-      );
-    }
-  }
-
-  if (data.status && !VALID_STATUSES.includes(data.status)) {
-    errors.push(`Invalid status. Must be one of: ${VALID_STATUSES.join(", ")}`);
-  }
-
-  if (data.locationType && !VALID_LOCATION_TYPES.includes(data.locationType)) {
-    errors.push(
-      `Invalid location type. Must be one of: ${VALID_LOCATION_TYPES.join(", ")}`,
-    );
-  }
-
-  if (data.eventType && !VALID_EVENT_TYPES.includes(data.eventType)) {
-    errors.push(
-      `Invalid event type. Must be one of: ${VALID_EVENT_TYPES.join(", ")}`,
-    );
-  }
-
-  if (
-    (data.locationType === "online" || data.locationType === "hybrid") &&
-    !data.meetingUrl
-  ) {
-    errors.push("Meeting URL is required for online/hybrid events");
-  }
-
-  if (data.locationType === "offline" && !data.location) {
-    errors.push("Location is required for offline events");
-  }
-
-  if (data.eventStart && data.eventEnd) {
-    const startDate = new Date(data.eventStart);
-    const endDate = new Date(data.eventEnd);
-
-    if (isNaN(startDate.getTime())) {
-      errors.push("Invalid event start date format");
-    }
-
-    if (isNaN(endDate.getTime())) {
-      errors.push("Invalid event end date format");
-    }
-
-    if (startDate >= endDate) {
-      errors.push("Event end date must be after start date");
-    }
-  }
-
-  if (data.solutions !== undefined) {
-    if (!Array.isArray(data.solutions)) {
-      errors.push("Solutions must be an array");
-    }
+  if (!result.success) {
+    result.error.issues.forEach((issue) => {
+      if (
+        !isUpdate &&
+        issue.code === "invalid_type" &&
+        requiredFields.includes(issue.path[0] as any)
+      ) {
+        return;
+      }
+      errors.push(issue.message);
+    });
   }
 
   return errors;

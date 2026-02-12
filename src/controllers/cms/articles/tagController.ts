@@ -5,6 +5,7 @@ import {
   buildCMSArticleTagSortParams,
   buildCMSArticleTagWhereCondition,
 } from "../../../utils/queryBuilder/cms/articles/tags";
+import { generateSlug } from "../../../utils/generateSlug";
 
 export const getTags = async (req: Request, res: Response) => {
   try {
@@ -64,14 +65,6 @@ export const getTags = async (req: Request, res: Response) => {
 
     res.status(500).json({ message });
   }
-};
-
-const generateSlug = (text: string) => {
-  return text
-    .toLowerCase()
-    .trim()
-    .replace(/[^\w\s-]/g, "")
-    .replace(/\s+/g, "-");
 };
 
 export const createTag = async (req: Request, res: Response) => {

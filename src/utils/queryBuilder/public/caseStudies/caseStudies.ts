@@ -1,14 +1,14 @@
 import { Prisma } from "@prisma/client";
 
 interface PublicCaseStudyFilterParams {
-  categorySlug?: string;
-  technologySlug?: string;
+  serviceSlug?: string;
+  industrySlug?: string;
   search?: string;
   isFeatured?: string;
 }
 
 export const buildPublicCaseStudyWhereCondition = (
-  params: PublicCaseStudyFilterParams
+  params: PublicCaseStudyFilterParams,
 ): Prisma.CaseStudyWhereInput => {
   const whereCondition: Prisma.CaseStudyWhereInput = {
     deletedAt: null,
@@ -22,22 +22,15 @@ export const buildPublicCaseStudyWhereCondition = (
     whereCondition.isFeatured = params.isFeatured === "true";
   }
 
-  if (params.categorySlug) {
-    whereCondition.category = {
-      slug: params.categorySlug,
-      deletedAt: null,
-      isActive: true,
+  if (params.serviceSlug) {
+    whereCondition.service = {
+      slug: params.serviceSlug,
     };
   }
 
-  if (params.technologySlug) {
-    whereCondition.technologies = {
-      some: {
-        technology: {
-          slug: params.technologySlug,
-          deletedAt: null,
-        },
-      },
+  if (params.industrySlug) {
+    whereCondition.industry = {
+      slug: params.industrySlug,
     };
   }
 
@@ -45,18 +38,6 @@ export const buildPublicCaseStudyWhereCondition = (
     whereCondition.OR = [
       {
         title: {
-          contains: params.search,
-          mode: "insensitive",
-        },
-      },
-      {
-        description: {
-          contains: params.search,
-          mode: "insensitive",
-        },
-      },
-      {
-        content: {
           contains: params.search,
           mode: "insensitive",
         },
@@ -76,7 +57,7 @@ export const buildPublicCaseStudyWhereCondition = (
 export const buildPublicCaseStudyPaginationMeta = (
   total: number,
   page: number,
-  limit: number
+  limit: number,
 ) => ({
   total,
   page,
@@ -86,7 +67,7 @@ export const buildPublicCaseStudyPaginationMeta = (
 
 export const buildPublicCaseStudyPaginationParams = (
   page: string = "1",
-  limit: string = "10"
+  limit: string = "10",
 ) => {
   const pageNum = Math.max(1, Number(page));
   const limitNum = Math.min(50, Math.max(1, Number(limit)));
@@ -98,20 +79,15 @@ export const buildPublicCaseStudyPaginationParams = (
 };
 
 export const buildPublicCaseStudySortParams = (
-  sortBy: string = "order",
-  order: string = "asc"
-): Prisma.CaseStudyOrderByWithRelationInput => {
-  const validSortFields = [
-    "order",
-    "publishedAt",
-    "createdAt",
-    "title",
-    "year",
+  sortBy: string = "publishedAt",
+  order: string = "desc",
+): Prisma.CaseStudyOrderByWithRelationInput[] => {
+  const validSortFields = ["publishedAt", "createdAt", "title", "year"];
+
+  const finalSortBy = validSortFields.includes(sortBy) ? sortBy : "publishedAt";
+
+  return [
+    { isFeatured: "desc" },
+    { [finalSortBy]: order === "desc" ? "desc" : "asc" },
   ];
-
-  const finalSortBy = validSortFields.includes(sortBy) ? sortBy : "order";
-
-  return {
-    [finalSortBy]: order === "desc" ? "desc" : "asc",
-  };
 };

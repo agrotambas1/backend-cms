@@ -29,14 +29,10 @@ components:
         eventType:
           type: string
           description: Event Type
-        eventStart:
+        eventDate:
           type: string
           format: date-time
-          description: Event start datetime
-        eventEnd:
-          type: string
-          format: date-time
-          description: Event end datetime
+          description: Event datetime
         location:
           type: string
           nullable: true
@@ -89,10 +85,6 @@ components:
               type: string
             url:
               type: string
-        solutions:
-          type: string
-          example: '["solution-uuid-1", "solution-uuid-2"]'
-          description: JSON string array of solution IDs
         creator:
           type: object
           properties:
@@ -108,11 +100,19 @@ components:
               type: string
             name:
               type: string
+        serviceId:
+          type: string
+          format: uuid
+          description: Case Study service
+        industryId:
+          type: string
+          format: uuid
+          description: Case Study industry
       required:
         - id
         - title
         - slug
-        - eventStart
+        - eventDate
         - eventEnd
         - locationType
         - status
@@ -122,7 +122,7 @@ components:
       required:
         - title
         - slug
-        - eventStart
+        - eventDate
         - eventEnd
         - locationType
         - status
@@ -150,14 +150,10 @@ components:
           type: string
           nullable: true
           description: "Event Type"
-        eventStart:
+        eventDate:
           type: string
           format: date-time
-          description: "Tanggal & waktu mulai event"
-        eventEnd:
-          type: string
-          format: date-time
-          description: "Tanggal & waktu selesai event"
+          description: "Tanggal & waktu event"
         location:
           type: string
           nullable: true
@@ -186,10 +182,14 @@ components:
           type: boolean
           default: false
           description: "Apakah event ditampilkan sebagai featured"
-        solutions:
+        serviceId:
           type: string
-          example: '["solution-uuid-1", "solution-uuid-2"]'
-          description: JSON string array of solution IDs
+          format: uuid
+          description: Article service
+        industryId:
+          type: string
+          format: uuid
+          description: Article industry
 
     UpdateEvent:
       type: object
@@ -217,14 +217,10 @@ components:
           type: string
           nullable: true
           description: "Event Type"
-        eventStart:
+        eventDate:
           type: string
           format: date-time
-          description: "Tanggal & waktu mulai event"
-        eventEnd:
-          type: string
-          format: date-time
-          description: "Tanggal & waktu selesai event"
+          description: "Tanggal & waktu event"
         location:
           type: string
           nullable: true
@@ -252,7 +248,11 @@ components:
         isFeatured:
           type: boolean
           description: "Apakah event ditampilkan sebagai featured"
-        solutions:
+        serviceId:
           type: string
-          example: '["solution-uuid-1", "solution-uuid-2"]'
-          description: JSON string array of solution IDs
+          format: uuid
+          description: Case Study service
+        industryId:
+          type: string
+          format: uuid
+          description: Case Study industry

@@ -1,14 +1,14 @@
 import { Prisma } from "@prisma/client";
 
-interface CMSCapabilityFilterParams {
+interface CMSServiceFilterParams {
   search?: string;
   isActive?: string;
 }
 
-export const buildCMSCapabilityWhereCondition = (
-  params: CMSCapabilityFilterParams,
-): Prisma.CapabilityWhereInput => {
-  const where: Prisma.CapabilityWhereInput = {
+export const buildCMSServiceWhereCondition = (
+  params: CMSServiceFilterParams,
+): Prisma.ServiceWhereInput => {
+  const where: Prisma.ServiceWhereInput = {
     deletedAt: null,
   };
 
@@ -27,10 +27,7 @@ export const buildCMSCapabilityWhereCondition = (
   return where;
 };
 
-export const buildCMSCapabilityPaginationParams = (
-  page = "1",
-  limit = "10",
-) => {
+export const buildCMSServicePaginationParams = (page = "1", limit = "10") => {
   const pageNum = Math.max(1, Number(page));
   const limitNum = Math.min(100, Math.max(1, Number(limit)));
 
@@ -40,10 +37,10 @@ export const buildCMSCapabilityPaginationParams = (
   };
 };
 
-export const buildCMSCapabilitySortParams = (
+export const buildCMSServiceSortParams = (
   sortBy = "order",
   order = "asc",
-): Prisma.CapabilityOrderByWithRelationInput => {
+): Prisma.ServiceOrderByWithRelationInput => {
   const validSortFields = ["createdAt", "name", "order"];
   const finalSortBy = validSortFields.includes(sortBy) ? sortBy : "order";
 

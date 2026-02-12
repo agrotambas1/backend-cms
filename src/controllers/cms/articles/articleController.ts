@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { prisma } from "../../../config/db";
-import { parseSeoKeywords, parseTags } from "../../../utils/parseHelper";
+import { parseTags } from "../../../utils/parseHelper";
 import { validateArticleData } from "../../../validators/articleValidator";
 import {
   articleInclude,
@@ -12,6 +12,7 @@ import {
   buildCMSArticleWhereCondition,
 } from "../../../utils/queryBuilder/cms/articles/article";
 import sanitizeHtml from "sanitize-html";
+import { generateSlug } from "../../../utils/generateSlug";
 
 export const getArticles = async (req: Request, res: Response) => {
   try {
@@ -24,19 +25,23 @@ export const getArticles = async (req: Request, res: Response) => {
       limit = "10",
       sortBy,
       order,
-      categorySlug,
-      tagSlug,
+      categoryId,
+      tagId,
       search,
       status,
       isFeatured,
+      serviceId,
+      industryId,
     } = req.query;
 
     const where = buildCMSArticleWhereCondition({
-      categorySlug: categorySlug as string,
-      tagSlug: tagSlug as string,
+      categoryId: categoryId as string,
+      tagId: tagId as string,
       search: search as string,
       status: status as string,
       isFeatured: isFeatured as string,
+      serviceId: serviceId as string,
+      industryId: industryId as string,
     });
 
     const pagination = buildCMSArticlePaginationParams(
@@ -58,6 +63,12 @@ export const getArticles = async (req: Request, res: Response) => {
       }),
       prisma.article.count({ where }),
     ]);
+
+    res.set({
+      "Cache-Control": "private, no-cache, no-store, must-revalidate",
+      Pragma: "no-cache",
+      Expires: "0",
+    });
 
     return res.status(200).json({
       data: articles.map(transformArticle),
@@ -101,6 +112,12 @@ export const getArticleById = async (req: Request, res: Response) => {
       return res.status(404).json({ message: "Article not found" });
     }
 
+    res.set({
+      "Cache-Control": "private, no-cache, no-store, must-revalidate",
+      Pragma: "no-cache",
+      Expires: "0",
+    });
+
     return res.status(200).json({
       status: "success",
       data: transformArticle(article),
@@ -115,14 +132,6 @@ export const getArticleById = async (req: Request, res: Response) => {
 
     res.status(500).json({ message });
   }
-};
-
-const generateSlug = (text: string) => {
-  return text
-    .toLowerCase()
-    .trim()
-    .replace(/[^\w\s-]/g, "")
-    .replace(/\s+/g, "-");
 };
 
 const resolveCreateArticleSlug = (slug?: string, title?: string) => {
@@ -159,6 +168,8 @@ export const createArticle = async (req: Request, res: Response) => {
       seoKeywords,
       thumbnailId,
       publicationId,
+      serviceId,
+      industryId,
     } = req.body;
 
     const cleanContent =
@@ -181,14 +192,38 @@ export const createArticle = async (req: Request, res: Response) => {
           })
         : "";
 
-    let parsedTags, parsedSeoKeywords;
+    let parsedTags;
     try {
       parsedTags = parseTags(tags);
-      parsedSeoKeywords = parseSeoKeywords(seoKeywords);
     } catch (error) {
       return res.status(400).json({
         message: error instanceof Error ? error.message : "Invalid format",
       });
+    }
+
+    let parsedSeoKeywords: string[] = [];
+    if (seoKeywords) {
+      try {
+        if (typeof seoKeywords === "string") {
+          parsedSeoKeywords = JSON.parse(seoKeywords);
+        } else if (Array.isArray(seoKeywords)) {
+          parsedSeoKeywords = seoKeywords;
+        } else {
+          return res.status(400).json({
+            message: "seoKeywords must be an array of strings",
+          });
+        }
+
+        if (!parsedSeoKeywords.every((k) => typeof k === "string")) {
+          return res.status(400).json({
+            message: "All SEO keywords must be strings",
+          });
+        }
+      } catch (error) {
+        return res.status(400).json({
+          message: "Invalid seoKeywords format",
+        });
+      }
     }
 
     const validationErrors = validateArticleData({
@@ -198,7 +233,12 @@ export const createArticle = async (req: Request, res: Response) => {
       content,
       categoryId,
       tags: parsedTags,
+      serviceId,
+      industryId,
       status,
+      metaTitle,
+      metaDescription,
+      seoKeywords: parsedSeoKeywords,
     });
 
     if (validationErrors.length > 0) {
@@ -213,6 +253,26 @@ export const createArticle = async (req: Request, res: Response) => {
 
     if (!categoryExists) {
       return res.status(400).json({ message: "Category does not exist" });
+    }
+
+    if (serviceId) {
+      const serviceExists = await prisma.service.findUnique({
+        where: { id: serviceId },
+      });
+
+      if (!serviceExists) {
+        return res.status(400).json({ message: "Service does not exist" });
+      }
+    }
+
+    if (industryId) {
+      const industryExists = await prisma.industry.findUnique({
+        where: { id: industryId },
+      });
+
+      if (!industryExists) {
+        return res.status(400).json({ message: "Industry does not exist" });
+      }
     }
 
     const finalSlug = resolveCreateArticleSlug(slug, title);
@@ -264,8 +324,11 @@ export const createArticle = async (req: Request, res: Response) => {
       content: cleanContent,
       thumbnailId: selectedThumbnailId,
       publicationId: selectedPublicationId,
+      serviceId,
+      industryId,
       metaTitle,
       metaDescription,
+      seoKeywords: parsedSeoKeywords.length > 0 ? parsedSeoKeywords : null,
       status,
       publishedAt: publishedAt ? new Date(publishedAt) : null,
       scheduledAt: scheduledAt ? new Date(scheduledAt) : null,
@@ -279,15 +342,6 @@ export const createArticle = async (req: Request, res: Response) => {
       articleData.tags = {
         create: parsedTags.map((tagId: string) => ({
           tagId: tagId.trim(),
-        })),
-      };
-    }
-
-    if (parsedSeoKeywords.length > 0) {
-      articleData.seoKeywords = {
-        create: parsedSeoKeywords.map((item) => ({
-          keyword: item.keyword,
-          order: item.order || 0,
         })),
       };
     }
@@ -334,13 +388,15 @@ export const updateArticle = async (req: Request, res: Response) => {
       publicationId,
       metaTitle,
       metaDescription,
+      seoKeywords,
       status,
       publishedAt,
       scheduledAt,
       isFeatured,
       categoryId,
       tags,
-      seoKeywords,
+      serviceId,
+      industryId,
     } = req.body;
 
     const existingArticle = await prisma.article.findFirst({
@@ -371,14 +427,38 @@ export const updateArticle = async (req: Request, res: Response) => {
           })
         : existingArticle.content;
 
-    let parsedTags, parsedSeoKeywords;
+    let parsedTags;
     try {
       parsedTags = parseTags(tags);
-      parsedSeoKeywords = parseSeoKeywords(seoKeywords);
     } catch (error) {
       return res.status(400).json({
         message: error instanceof Error ? error.message : "Invalid format",
       });
+    }
+
+    let parsedSeoKeywords: string[] = [];
+    if (seoKeywords) {
+      try {
+        if (typeof seoKeywords === "string") {
+          parsedSeoKeywords = JSON.parse(seoKeywords);
+        } else if (Array.isArray(seoKeywords)) {
+          parsedSeoKeywords = seoKeywords;
+        } else {
+          return res.status(400).json({
+            message: "seoKeywords must be an array of strings",
+          });
+        }
+
+        if (!parsedSeoKeywords.every((k) => typeof k === "string")) {
+          return res.status(400).json({
+            message: "All SEO keywords must be strings",
+          });
+        }
+      } catch (error) {
+        return res.status(400).json({
+          message: "Invalid seoKeywords format",
+        });
+      }
     }
 
     const validationErrors = validateArticleData({
@@ -386,9 +466,14 @@ export const updateArticle = async (req: Request, res: Response) => {
       slug,
       excerpt,
       content,
+      metaTitle,
+      metaDescription,
+      seoKeywords: parsedSeoKeywords,
       categoryId,
       tags: parsedTags,
       status,
+      serviceId,
+      industryId,
     });
 
     if (validationErrors.length > 0) {
@@ -404,6 +489,26 @@ export const updateArticle = async (req: Request, res: Response) => {
 
       if (!categoryExists) {
         return res.status(404).json({ message: "Category not found" });
+      }
+    }
+
+    if (serviceId) {
+      const serviceExists = await prisma.service.findUnique({
+        where: { id: serviceId },
+      });
+
+      if (!serviceExists) {
+        return res.status(404).json({ message: "Service not found" });
+      }
+    }
+
+    if (industryId) {
+      const industryExists = await prisma.industry.findUnique({
+        where: { id: industryId },
+      });
+
+      if (!industryExists) {
+        return res.status(404).json({ message: "Industry not found" });
       }
     }
 
@@ -456,8 +561,11 @@ export const updateArticle = async (req: Request, res: Response) => {
       content: cleanContent,
       thumbnailId: selectedThumbnailId,
       publicationId: selectedPublicationId,
+      serviceId,
+      industryId,
       metaTitle,
       metaDescription,
+      seoKeywords: parsedSeoKeywords.length > 0 ? parsedSeoKeywords : null,
       status,
       publishedAt: publishedAt ? new Date(publishedAt) : null,
       scheduledAt: scheduledAt ? new Date(scheduledAt) : null,
@@ -471,16 +579,6 @@ export const updateArticle = async (req: Request, res: Response) => {
         deleteMany: {},
         create: parsedTags.map((tagId: string) => ({
           tagId: tagId.trim(),
-        })),
-      };
-    }
-
-    if (parsedSeoKeywords.length > 0) {
-      articleData.seoKeywords = {
-        deleteMany: {},
-        create: parsedSeoKeywords.map((item) => ({
-          keyword: item.keyword,
-          order: item.order || 0,
         })),
       };
     }

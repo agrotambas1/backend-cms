@@ -37,6 +37,22 @@ export const articleInclude = {
       },
     },
   },
+  service: {
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+      description: true,
+    },
+  },
+  industry: {
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+      description: true,
+    },
+  },
   creator: {
     select: {
       id: true,
@@ -49,19 +65,11 @@ export const articleInclude = {
       name: true,
     },
   },
-  seoKeywords: {
-    select: {
-      id: true,
-      keyword: true,
-      order: true,
-    },
-    orderBy: {
-      order: "asc" as const,
-    },
-  },
 } satisfies Prisma.ArticleInclude;
 
 export const transformArticle = (article: any) => ({
   ...article,
-  tags: article.tags.map((at: any) => at.tag),
+  tags: article.tags.map((at: any) => at.tag) || [],
+
+  seoKeywords: article.seoKeywords || [],
 });

@@ -2,20 +2,16 @@ import { Prisma } from "@prisma/client";
 
 export const eventPublicSelect = {
   id: true,
-  title: true,
+  eventName: true,
   slug: true,
+  eventType: true,
   excerpt: true,
-
-  eventStart: true,
-  eventEnd: true,
-
+  description: true,
+  eventDate: true,
   location: true,
   locationType: true,
   quota: true,
-
   status: true,
-  isFeatured: true,
-
   createdAt: true,
 
   thumbnailMedia: {
@@ -23,6 +19,23 @@ export const eventPublicSelect = {
       id: true,
       url: true,
       altText: true,
+    },
+  },
+
+  service: {
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+      description: true,
+    },
+  },
+  industry: {
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+      description: true,
     },
   },
 
@@ -36,23 +49,16 @@ export const eventPublicSelect = {
 
 export const eventPublicDetailSelect = {
   id: true,
-  title: true,
+  eventName: true,
   slug: true,
+  eventType: true,
   excerpt: true,
-  content: true,
-
-  eventStart: true,
-  eventEnd: true,
-
+  description: true,
+  eventDate: true,
   location: true,
   locationType: true,
-  meetingUrl: true,
-  registrationUrl: true,
   quota: true,
-
   status: true,
-  isFeatured: true,
-
   createdAt: true,
 
   thumbnailMedia: {
@@ -65,22 +71,20 @@ export const eventPublicDetailSelect = {
     },
   },
 
-  images: {
-    orderBy: {
-      order: "asc" as const,
-    },
+  service: {
     select: {
       id: true,
-      order: true,
-      media: {
-        select: {
-          id: true,
-          url: true,
-          altText: true,
-          width: true,
-          height: true,
-        },
-      },
+      name: true,
+      slug: true,
+      description: true,
+    },
+  },
+  industry: {
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+      description: true,
     },
   },
 
@@ -94,9 +98,4 @@ export const eventPublicDetailSelect = {
 
 export const transformEventPublic = (event: any) => ({
   ...event,
-  images: event.images.map((img: any) => ({
-    id: img.id,
-    order: img.order,
-    media: img.media,
-  })),
 });

@@ -1,13 +1,14 @@
 import { Request, Response } from "express";
 import { prisma } from "../../../config/db";
 import {
-  buildCMSSolutionPaginationParams,
-  buildCMSSolutionSortParams,
-  buildCMSSolutionWhereCondition,
-} from "../../../utils/queryBuilder/cms/solutions/solution";
-import { validateSolutionData } from "../../../validators/solutions/solutionValidator";
+  buildCMSServicePaginationParams,
+  buildCMSServiceSortParams,
+  buildCMSServiceWhereCondition,
+} from "../../../utils/queryBuilder/cms/service/service";
+import { validateServiceData } from "../../../validators/service/serviceValidator";
+import { generateSlug } from "../../../utils/generateSlug";
 
-export const getSolutions = async (req: Request, res: Response) => {
+export const getServices = async (req: Request, res: Response) => {
   try {
     if (!req.user?.id) {
       return res.status(401).json({ message: "Unauthorized" });
@@ -22,23 +23,23 @@ export const getSolutions = async (req: Request, res: Response) => {
       order,
     } = req.query;
 
-    const where = buildCMSSolutionWhereCondition({
+    const where = buildCMSServiceWhereCondition({
       search: search as string,
       isActive: isActive as string,
     });
 
-    const pagination = buildCMSSolutionPaginationParams(
+    const pagination = buildCMSServicePaginationParams(
       page as string,
       limit as string,
     );
 
-    const orderBy = buildCMSSolutionSortParams(
+    const orderBy = buildCMSServiceSortParams(
       sortBy as string,
       order as string,
     );
 
-    const [solutions, total] = await Promise.all([
-      prisma.solution.findMany({
+    const [services, total] = await Promise.all([
+      prisma.service.findMany({
         where,
         orderBy,
         ...pagination,
@@ -47,25 +48,22 @@ export const getSolutions = async (req: Request, res: Response) => {
           name: true,
           slug: true,
           description: true,
-          icon: true,
-          color: true,
-          order: true,
           isActive: true,
           createdAt: true,
-          _count: {
-            select: {
-              caseStudies: true,
-              events: true,
-              // articles: true,
-            },
-          },
+          // _count: {
+          //   select: {
+          //     caseStudies: true,
+          //     events: true,
+          //     articles: true,
+          //   },
+          // },
         },
       }),
-      prisma.solution.count({ where }),
+      prisma.service.count({ where }),
     ]);
 
     return res.status(200).json({
-      data: solutions,
+      data: services,
       meta: {
         total,
         page: Number(page),
@@ -74,18 +72,18 @@ export const getSolutions = async (req: Request, res: Response) => {
       },
     });
   } catch (error) {
-    console.error("Error fetching solutions:", error);
+    console.error("Error fetching services:", error);
 
     const message =
       process.env.NODE_ENV === "production"
-        ? "Failed to fetch solutions"
+        ? "Failed to fetch services"
         : (error as Error).message;
 
     res.status(500).json({ message });
   }
 };
 
-export const getSolutionById = async (req: Request, res: Response) => {
+export const getServiceById = async (req: Request, res: Response) => {
   try {
     if (!req.user?.id) {
       return res.status(401).json({ message: "Unauthorized" });
@@ -94,60 +92,51 @@ export const getSolutionById = async (req: Request, res: Response) => {
     const { id } = req.params;
 
     if (!id) {
-      return res.status(400).json({ message: "Solution ID is required" });
+      return res.status(400).json({ message: "Service ID is required" });
     }
 
-    const solution = await prisma.solution.findFirst({
+    const service = await prisma.service.findFirst({
       where: {
         id,
         deletedAt: null,
       },
-      include: {
-        _count: {
-          select: {
-            caseStudies: true,
-            events: true,
-            // articles: true,
-          },
-        },
-      },
+      // include: {
+      //   _count: {
+      //     select: {
+      //       caseStudies: true,
+      //       events: true,
+      //       articles: true,
+      //     },
+      //   },
+      // },
     });
 
-    if (!solution) {
-      return res.status(404).json({ message: "Solution not found" });
+    if (!service) {
+      return res.status(404).json({ message: "Service not found" });
     }
 
     return res.status(200).json({
-      data: solution,
+      data: service,
     });
   } catch (error) {
-    console.error("Error fetching solution:", error);
+    console.error("Error fetching service:", error);
 
     const message =
       process.env.NODE_ENV === "production"
-        ? "Failed to fetch solution"
+        ? "Failed to fetch service"
         : (error as Error).message;
 
     res.status(500).json({ message });
   }
 };
 
-const generateSlug = (text: string) => {
-  return text
-    .toLowerCase()
-    .trim()
-    .replace(/[^\w\s-]/g, "")
-    .replace(/\s+/g, "-");
-};
-
-export const createSolution = async (req: Request, res: Response) => {
+export const createService = async (req: Request, res: Response) => {
   try {
     if (!req.user?.id) {
       return res.status(401).json({ message: "Unauthorized" });
     }
 
-    // Validate for CREATE (isUpdate = false)
-    const errors = validateSolutionData(req.body, false);
+    const errors = validateServiceData(req.body, false);
     if (errors.length > 0) {
       return res.status(400).json({
         message: "Validation failed",
@@ -155,11 +144,11 @@ export const createSolution = async (req: Request, res: Response) => {
       });
     }
 
-    const { name, slug, description, icon, color, order, isActive } = req.body;
+    const { name, slug, description, isActive } = req.body;
 
     const finalSlug = slug?.trim() ? slug : generateSlug(name);
 
-    const existing = await prisma.solution.findFirst({
+    const existing = await prisma.service.findFirst({
       where: {
         slug: finalSlug,
         deletedAt: null,
@@ -168,37 +157,34 @@ export const createSolution = async (req: Request, res: Response) => {
 
     if (existing) {
       return res.status(409).json({
-        message: "Solution with the same slug already exists",
+        message: "Service with the same slug already exists",
       });
     }
 
-    const solution = await prisma.solution.create({
+    const service = await prisma.service.create({
       data: {
         name,
         slug: finalSlug,
         description: description || null,
-        icon: icon || null,
-        color: color || null,
-        order: order ?? 0,
         isActive: isActive ?? true,
       },
     });
 
     res.status(201).json({
       status: "success",
-      data: { solution },
-      message: "Solution created successfully",
+      data: { service },
+      message: "Service created successfully",
     });
   } catch (error) {
-    console.error("Error creating solution:", error);
+    console.error("Error creating service:", error);
     res.status(500).json({
-      message: "Failed to create solution",
+      message: "Failed to create service",
       error: error instanceof Error ? error.message : error,
     });
   }
 };
 
-export const updateSolution = async (req: Request, res: Response) => {
+export const updateService = async (req: Request, res: Response) => {
   try {
     if (!req.user?.id) {
       return res.status(401).json({ message: "Unauthorized" });
@@ -207,10 +193,10 @@ export const updateSolution = async (req: Request, res: Response) => {
     const { id } = req.params;
 
     if (!id) {
-      return res.status(400).json({ message: "Solution ID is required" });
+      return res.status(400).json({ message: "Service ID is required" });
     }
 
-    const errors = validateSolutionData(req.body, true);
+    const errors = validateServiceData(req.body, true);
     if (errors.length > 0) {
       return res.status(400).json({
         message: "Validation failed",
@@ -218,23 +204,20 @@ export const updateSolution = async (req: Request, res: Response) => {
       });
     }
 
-    const existingSolution = await prisma.solution.findFirst({
+    const existingService = await prisma.service.findFirst({
       where: { id, deletedAt: null },
     });
 
-    if (!existingSolution) {
-      return res.status(404).json({ message: "Solution not found" });
+    if (!existingService) {
+      return res.status(404).json({ message: "Service not found" });
     }
 
-    const { name, slug, description, icon, color, order, isActive } = req.body;
+    const { name, slug, description, isActive } = req.body;
 
     const updateData: any = {};
 
     if (name !== undefined) updateData.name = name;
     if (description !== undefined) updateData.description = description;
-    if (icon !== undefined) updateData.icon = icon;
-    if (color !== undefined) updateData.color = color;
-    if (order !== undefined) updateData.order = order;
     if (isActive !== undefined) updateData.isActive = isActive;
 
     if (slug !== undefined || name !== undefined) {
@@ -242,9 +225,9 @@ export const updateSolution = async (req: Request, res: Response) => {
         ? slug
         : name
           ? generateSlug(name)
-          : existingSolution.slug;
+          : existingService.slug;
 
-      const slugConflict = await prisma.solution.findFirst({
+      const slugConflict = await prisma.service.findFirst({
         where: {
           slug: finalSlug,
           deletedAt: null,
@@ -254,33 +237,33 @@ export const updateSolution = async (req: Request, res: Response) => {
 
       if (slugConflict) {
         return res.status(409).json({
-          message: "Solution with the same slug already exists",
+          message: "Service with the same slug already exists",
         });
       }
 
       updateData.slug = finalSlug;
     }
 
-    const solution = await prisma.solution.update({
+    const service = await prisma.service.update({
       where: { id },
       data: updateData,
     });
 
     res.status(200).json({
       status: "success",
-      data: { solution },
-      message: "Solution updated successfully",
+      data: { service },
+      message: "Service updated successfully",
     });
   } catch (error) {
-    console.error("Error updating solution:", error);
+    console.error("Error updating service:", error);
     res.status(500).json({
-      message: "Failed to update solution",
+      message: "Failed to update service",
       error: error instanceof Error ? error.message : error,
     });
   }
 };
 
-export const deleteSolution = async (req: Request, res: Response) => {
+export const deleteService = async (req: Request, res: Response) => {
   try {
     if (!req.user?.id) {
       return res.status(401).json({ message: "Unauthorized" });
@@ -289,10 +272,10 @@ export const deleteSolution = async (req: Request, res: Response) => {
     const { id } = req.params;
 
     if (!id) {
-      return res.status(400).json({ message: "Solution ID is required" });
+      return res.status(400).json({ message: "Service ID is required" });
     }
 
-    const solution = await prisma.solution.findFirst({
+    const service = await prisma.service.findFirst({
       where: {
         id,
         deletedAt: null,
@@ -302,30 +285,30 @@ export const deleteSolution = async (req: Request, res: Response) => {
           select: {
             caseStudies: true,
             events: true,
-            // articles: true,
+            articles: true,
           },
         },
       },
     });
 
-    if (!solution) {
-      return res.status(404).json({ message: "Solution not found" });
+    if (!service) {
+      return res.status(404).json({ message: "Service not found" });
     }
 
-    const totalUsage = solution._count.caseStudies + solution._count.events;
+    const totalUsage = service._count.caseStudies;
 
     if (totalUsage > 0) {
       return res.status(409).json({
-        message: `Cannot delete solution. It is being used in ${totalUsage} content item(s)`,
+        message: `Cannot delete service. It is being used in ${totalUsage} content item(s)`,
         usage: {
-          caseStudies: solution._count.caseStudies,
-          events: solution._count.events,
-          // articles: solution._count.articles,
+          caseStudies: service._count.caseStudies,
+          events: service._count.events,
+          articles: service._count.articles,
         },
       });
     }
 
-    await prisma.solution.update({
+    await prisma.service.update({
       where: { id },
       data: {
         deletedAt: new Date(),
@@ -334,10 +317,10 @@ export const deleteSolution = async (req: Request, res: Response) => {
 
     res.status(200).json({
       status: "success",
-      message: "Solution deleted successfully",
+      message: "Service deleted successfully",
     });
   } catch (error) {
-    console.error("Error deleting solution:", error);
-    res.status(500).json({ message: "Failed to delete solution" });
+    console.error("Error deleting service:", error);
+    res.status(500).json({ message: "Failed to delete service" });
   }
 };

@@ -11,6 +11,7 @@ export const articlePublicSelect = {
   metaTitle: true,
   metaDescription: true,
   updatedAt: true,
+  seoKeywords: true,
 
   thumbnailMedia: {
     select: {
@@ -38,6 +39,25 @@ export const articlePublicSelect = {
     },
     take: 5,
   },
+
+  service: {
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+      description: true,
+    },
+  },
+
+  industry: {
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+      description: true,
+    },
+  },
+
   creator: {
     select: {
       id: true,
@@ -52,13 +72,12 @@ export const articlePublicDetailSelect = {
   slug: true,
   excerpt: true,
   content: true,
-
   publishedAt: true,
   viewCount: true,
   isFeatured: true,
-
   metaTitle: true,
   metaDescription: true,
+  seoKeywords: true,
 
   thumbnailMedia: {
     select: {
@@ -91,21 +110,27 @@ export const articlePublicDetailSelect = {
     },
   },
 
+  service: {
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+      description: true,
+    },
+  },
+  industry: {
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+      description: true,
+    },
+  },
+
   creator: {
     select: {
       id: true,
       name: true,
-    },
-  },
-
-  seoKeywords: {
-    select: {
-      id: true,
-      keyword: true,
-      order: true,
-    },
-    orderBy: {
-      order: "asc" as const,
     },
   },
 } satisfies Prisma.ArticleSelect;
@@ -113,4 +138,6 @@ export const articlePublicDetailSelect = {
 export const transformArticlePublic = (article: any) => ({
   ...article,
   tags: article.tags.map((at: any) => at.tag),
+
+  seoKeywords: article.seoKeywords || [],
 });

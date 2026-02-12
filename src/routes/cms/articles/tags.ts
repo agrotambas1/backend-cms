@@ -12,7 +12,7 @@ const router = express.Router();
 
 router.use(authMiddleware);
 
-router.get("/article-tags", adminOnly, getTags);
+router.get("/article-tags", getTags);
 
 router.post("/article-tags", adminOnly, createTag);
 

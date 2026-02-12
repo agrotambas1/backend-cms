@@ -1,6 +1,5 @@
 import { Request, Response } from "express";
 import { prisma } from "../../../config/db";
-import { ParsedGalleryItem, parseGallery } from "../../../utils/parseHelper";
 import { validateEventData } from "../../../validators/eventValidator";
 import {
   eventInclude,
@@ -12,6 +11,7 @@ import {
   buildCMSEventWhereCondition,
 } from "../../../utils/queryBuilder/cms/event/event";
 import sanitizeHtml from "sanitize-html";
+import { generateSlug } from "../../../utils/generateSlug";
 
 export const getEvents = async (req: Request, res: Response) => {
   try {
@@ -26,19 +26,19 @@ export const getEvents = async (req: Request, res: Response) => {
       order,
       search,
       status,
-      isFeatured,
       locationType,
       eventType,
-      solutionSlug,
+      serviceId,
+      industryId,
     } = req.query;
 
     const where = buildCMSEventWhereCondition({
       search: search as string,
       status: status as string,
-      isFeatured: isFeatured as string,
       locationType: locationType as string,
       eventType: eventType as string,
-      solutionSlug: solutionSlug as string,
+      serviceId: serviceId as string,
+      industryId: industryId as string,
     });
 
     const pagination = buildCMSEventPaginationParams(
@@ -60,6 +60,12 @@ export const getEvents = async (req: Request, res: Response) => {
       }),
       prisma.event.count({ where }),
     ]);
+
+    res.set({
+      "Cache-Control": "private, no-cache, no-store, must-revalidate",
+      Pragma: "no-cache",
+      Expires: "0",
+    });
 
     return res.status(200).json({
       data: events,
@@ -103,9 +109,15 @@ export const getEventById = async (req: Request, res: Response) => {
       return res.status(404).json({ message: "Event not found" });
     }
 
+    res.set({
+      "Cache-Control": "private, no-cache, no-store, must-revalidate",
+      Pragma: "no-cache",
+      Expires: "0",
+    });
+
     return res.status(200).json({
       status: "success",
-      data: { event },
+      data: transformEvent(event),
     });
   } catch (error) {
     console.error("Error fetching event:", error);
@@ -119,21 +131,13 @@ export const getEventById = async (req: Request, res: Response) => {
   }
 };
 
-const generateSlug = (text: string) => {
-  return text
-    .toLowerCase()
-    .trim()
-    .replace(/[^\w\s-]/g, "")
-    .replace(/\s+/g, "-");
-};
-
-const resolveCreateEventSlug = (slug?: string, title?: string) => {
+const resolveCreateEventSlug = (slug?: string, eventName?: string) => {
   if (slug && slug.trim()) {
     return slug.trim().toLowerCase();
   }
 
-  if (title) {
-    return generateSlug(title).toLowerCase();
+  if (eventName) {
+    return generateSlug(eventName).toLowerCase();
   }
 
   return null;
@@ -146,42 +150,26 @@ export const createEvent = async (req: Request, res: Response) => {
     }
 
     const {
-      title,
+      eventName,
       slug,
       excerpt,
-      content,
+      description,
       thumbnailId,
       eventType,
-      eventStart,
-      eventEnd,
+      eventDate,
       location,
       locationType,
       meetingUrl,
       registrationUrl,
       quota,
       status,
-      isFeatured,
-      solutions,
+      serviceId,
+      industryId,
     } = req.body;
 
-    const validationErrors = validateEventData({
-      title,
-      slug,
-      eventStart,
-      eventEnd,
-      locationType,
-      location,
-      meetingUrl,
-      status,
-    });
-
-    if (validationErrors.length > 0) {
-      return res.status(400).json({ message: validationErrors[0] });
-    }
-
-    const cleanContent =
-      typeof content === "string"
-        ? sanitizeHtml(content, {
+    const cleanDescription =
+      typeof description === "string"
+        ? sanitizeHtml(description, {
             allowedTags: sanitizeHtml.defaults.allowedTags.concat([
               "h1",
               "h2",
@@ -199,7 +187,49 @@ export const createEvent = async (req: Request, res: Response) => {
           })
         : "";
 
-    const finalSlug = resolveCreateEventSlug(slug, title);
+    const validationErrors = validateEventData({
+      eventName,
+      slug,
+      eventDate,
+      locationType,
+      location,
+      meetingUrl,
+      status,
+      eventType,
+      serviceId,
+      industryId,
+      registrationUrl,
+      thumbnailId,
+      quota,
+      excerpt,
+      description,
+    });
+
+    if (validationErrors.length > 0) {
+      return res.status(400).json({ message: validationErrors[0] });
+    }
+
+    if (serviceId) {
+      const serviceExists = await prisma.service.findUnique({
+        where: { id: serviceId },
+      });
+
+      if (!serviceExists) {
+        return res.status(400).json({ message: "Service does not exist" });
+      }
+    }
+
+    if (industryId) {
+      const industryExists = await prisma.industry.findUnique({
+        where: { id: industryId },
+      });
+
+      if (!industryExists) {
+        return res.status(400).json({ message: "Industry does not exist" });
+      }
+    }
+
+    const finalSlug = resolveCreateEventSlug(slug, eventName);
 
     if (!finalSlug) {
       return res.status(400).json({ message: "Slug is required" });
@@ -228,48 +258,24 @@ export const createEvent = async (req: Request, res: Response) => {
       selectedThumbnailId = thumbnailId;
     }
 
-    if (solutions && solutions.length > 0) {
-      const solutionRecords = await prisma.solution.findMany({
-        where: {
-          id: { in: solutions },
-          deletedAt: null,
-          isActive: true,
-        },
-      });
-
-      if (solutionRecords.length !== solutions.length) {
-        return res.status(400).json({
-          message: "One or more solutions do not exist or are inactive",
-        });
-      }
-    }
-
     const eventData: any = {
-      title,
+      eventName,
       slug: finalSlug,
       excerpt,
-      content: cleanContent,
+      description: cleanDescription,
       thumbnailId: selectedThumbnailId,
       eventType,
-      eventStart: eventStart ? new Date(eventStart) : null,
-      eventEnd: eventEnd ? new Date(eventEnd) : null,
+      eventDate: eventDate ? new Date(eventDate) : null,
       location,
       locationType,
       meetingUrl,
       registrationUrl,
       quota: quota ? parseInt(quota, 10) : null,
       status,
-      isFeatured: isFeatured === "true" || isFeatured === true,
       createdBy: req.user.id,
+      serviceId,
+      industryId,
     };
-
-    if (solutions && solutions.length > 0) {
-      eventData.solutions = {
-        create: solutions.map((solutionId: string) => ({
-          solutionId,
-        })),
-      };
-    }
 
     const event = await prisma.event.create({
       data: eventData,
@@ -301,22 +307,21 @@ export const updateEvent = async (req: Request, res: Response) => {
     if (!id) return res.status(400).json({ message: "Event ID is required" });
 
     const {
-      title,
+      eventName,
       slug,
       excerpt,
-      content,
+      description,
       thumbnailId,
       eventType,
-      eventStart,
-      eventEnd,
+      eventDate,
       location,
       locationType,
       meetingUrl,
       registrationUrl,
       quota,
       status,
-      isFeatured,
-      solutions,
+      serviceId,
+      industryId,
     } = req.body;
 
     const existingEvent = await prisma.event.findFirst({
@@ -324,26 +329,14 @@ export const updateEvent = async (req: Request, res: Response) => {
         id,
         deletedAt: null,
       },
-      include: {
-        solutions: true,
-      },
     });
 
     if (!existingEvent)
       return res.status(404).json({ message: "Event not found" });
 
-    const validationErrors = validateEventData(req.body, true);
-
-    if (validationErrors.length > 0) {
-      return res.status(400).json({
-        message: "Validation failed",
-        errors: validationErrors,
-      });
-    }
-
-    const cleanContent =
-      typeof content === "string"
-        ? sanitizeHtml(content, {
+    const cleanDescription =
+      typeof description === "string"
+        ? sanitizeHtml(description, {
             allowedTags: sanitizeHtml.defaults.allowedTags.concat([
               "h1",
               "h2",
@@ -359,7 +352,16 @@ export const updateEvent = async (req: Request, res: Response) => {
             disallowedTagsMode: "discard",
             nonBooleanAttributes: ["style"],
           })
-        : existingEvent.content;
+        : existingEvent.description;
+
+    const validationErrors = validateEventData(req.body, true);
+
+    if (validationErrors.length > 0) {
+      return res.status(400).json({
+        message: "Validation failed",
+        errors: validationErrors,
+      });
+    }
 
     const finalSlug = slug?.trim()
       ? slug.trim().toLowerCase()
@@ -386,52 +388,24 @@ export const updateEvent = async (req: Request, res: Response) => {
       selectedThumbnailId = thumbnailId;
     }
 
-    if (solutions !== undefined && solutions.length > 0) {
-      const solutionRecords = await prisma.solution.findMany({
-        where: {
-          id: { in: solutions },
-          deletedAt: null,
-          isActive: true,
-        },
-      });
-
-      if (solutionRecords.length !== solutions.length) {
-        return res.status(400).json({
-          message: "One or more solutions do not exist or are inactive",
-        });
-      }
-    }
-
     const eventData: any = {
-      title,
+      eventName,
       slug: finalSlug,
       excerpt,
-      content: cleanContent,
+      description: cleanDescription,
       thumbnailId: selectedThumbnailId,
       eventType: eventType !== undefined ? eventType : existingEvent.eventType,
-      eventStart: eventStart ? new Date(eventStart) : existingEvent.eventStart,
-      eventEnd: eventEnd ? new Date(eventEnd) : existingEvent.eventEnd,
+      eventDate: eventDate ? new Date(eventDate) : existingEvent.eventDate,
       location,
       locationType,
       meetingUrl,
       registrationUrl,
       quota: quota !== undefined ? parseInt(quota, 10) : existingEvent.quota,
       status,
-      isFeatured:
-        isFeatured !== undefined
-          ? isFeatured === "true" || isFeatured === true
-          : existingEvent.isFeatured,
       updatedBy: req.user.id,
+      serviceId,
+      industryId,
     };
-
-    if (solutions !== undefined) {
-      eventData.solutions = {
-        deleteMany: {}, // Remove all existing solutions
-        create: solutions.map((solutionId: string) => ({
-          solutionId,
-        })),
-      };
-    }
 
     const updatedEvent = await prisma.event.update({
       where: { id },

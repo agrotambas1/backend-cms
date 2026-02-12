@@ -52,6 +52,11 @@ export const getPublicArticles = async (req: Request, res: Response) => {
       prisma.article.count({ where }),
     ]);
 
+    res.set({
+      "Cache-Control": "public, max-age=600, s-maxage=3600",
+      "X-Total-Count": total.toString(),
+    });
+
     const transformedArticles = articles.map(transformArticlePublic);
 
     return res.status(200).json({
@@ -108,7 +113,10 @@ export const getPublicArticleBySlug = async (req: Request, res: Response) => {
       });
     }
 
-    // Increment view count
+    res.set({
+      "Cache-Control": "public, max-age=600, s-maxage=3600",
+    });
+
     await prisma.article
       .update({
         where: { id: article.id },

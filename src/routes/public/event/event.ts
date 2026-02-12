@@ -6,8 +6,8 @@ import {
 
 const router = express.Router();
 
-router.get("/event", getPublicEvents);
+router.get("/events", getPublicEvents);
 
-router.get("/event/:slug", getPublicEventBySlug);
+router.get("/events/:slug", getPublicEventBySlug);
 
 export default router;

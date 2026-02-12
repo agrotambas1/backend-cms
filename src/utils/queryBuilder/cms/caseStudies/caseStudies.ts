@@ -4,10 +4,9 @@ interface CMSCaseStudyFilterParams {
   search?: string;
   status?: string;
   isFeatured?: string;
-  solutionSlug?: string;
-  industrySlug?: string;
-  capabilitySlug?: string;
-  year?: string;
+  serviceId?: string;
+  industryId?: string;
+  client?: string;
 }
 
 export const buildCMSCaseStudyWhereCondition = (
@@ -25,55 +24,29 @@ export const buildCMSCaseStudyWhereCondition = (
     where.isFeatured = params.isFeatured === "true";
   }
 
-  if (params.solutionSlug) {
-    where.solutions = {
-      some: {
-        solution: {
-          slug: params.solutionSlug,
-          deletedAt: null,
-          isActive: true,
-        },
-      },
+  if (params.client) {
+    where.client = {
+      contains: params.client,
+      mode: "insensitive",
     };
   }
 
-  if (params.industrySlug) {
-    where.industries = {
-      some: {
-        industry: {
-          slug: params.industrySlug,
-          deletedAt: null,
-          isActive: true,
-        },
-      },
-    };
+  if (params.serviceId) {
+    where.serviceId = params.serviceId;
   }
 
-  if (params.capabilitySlug) {
-    where.capabilities = {
-      some: {
-        capability: {
-          slug: params.capabilitySlug,
-          deletedAt: null,
-          isActive: true,
-        },
-      },
-    };
-  }
-
-  if (params.year) {
-    where.year = Number(params.year);
+  if (params.industryId) {
+    where.industryId = params.industryId;
   }
 
   if (params.search) {
     where.OR = [
       { title: { contains: params.search, mode: "insensitive" } },
-      { summary: { contains: params.search, mode: "insensitive" } },
-      { description: { contains: params.search, mode: "insensitive" } },
-      { content: { contains: params.search, mode: "insensitive" } },
       { problem: { contains: params.search, mode: "insensitive" } },
       { solution: { contains: params.search, mode: "insensitive" } },
       { client: { contains: params.search, mode: "insensitive" } },
+      { metaTitle: { contains: params.search, mode: "insensitive" } },
+      { metaDescription: { contains: params.search, mode: "insensitive" } },
     ];
   }
 
@@ -98,9 +71,8 @@ export const buildCMSCaseStudySortParams = (
     "createdAt",
     "updatedAt",
     "publishedAt",
-    "order",
     "title",
-    "year",
+    "client",
   ];
 
   const finalSortBy = validSortFields.includes(sortBy) ? sortBy : "createdAt";

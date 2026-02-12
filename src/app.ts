@@ -9,7 +9,7 @@ import auth from "./routes/cms/auth/auth";
 import media from "./routes/cms/media/media";
 import user from "./routes/cms/users/users";
 import banner from "./routes/cms/banner/banners";
-import solutions from "./routes/cms/solutions/solution";
+import services from "./routes/cms/service/service";
 import capabilities from "./routes/cms/capabilities/capability";
 import industries from "./routes/cms/industries/industry";
 import articleCategories from "./routes/cms/articles/categories";
@@ -31,6 +31,8 @@ import caseStudiesTechnologiesPublic from "./routes/public/caseStudies/technolog
 
 import fileMedia from "./routes/file/file";
 
+import { ContentSchedulerService } from "./services/scheduler";
+
 import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
 
@@ -47,6 +49,8 @@ const cmsOrigins = [
   process.env.CMS_FRONTEND_URL || "http://localhost:3005",
   process.env.CMS_FRONTEND_PROD_URL,
   `http://localhost:${PORT}`,
+  // `http://192.168.1.10:3000`,
+  ,
 ].filter(Boolean);
 
 const publicOrigins = [
@@ -91,15 +95,15 @@ app.use("/api/cms", cmsCors, auth);
 app.use("/api/cms", cmsCors, user);
 app.use("/api/cms", cmsCors, media);
 app.use("/api/cms", cmsCors, banner);
-app.use("/api/cms", cmsCors, solutions);
-app.use("/api/cms", cmsCors, capabilities);
+app.use("/api/cms", cmsCors, services);
+// app.use("/api/cms", cmsCors, capabilities);
 app.use("/api/cms", cmsCors, industries);
 app.use("/api/cms", cmsCors, articleCategories);
 app.use("/api/cms", cmsCors, articleTags);
 app.use("/api/cms", cmsCors, article);
 app.use("/api/cms", cmsCors, event);
-app.use("/api/cms", cmsCors, caseStudiesCategories);
-app.use("/api/cms", cmsCors, caseStudiesTechnologies);
+// app.use("/api/cms", cmsCors, caseStudiesCategories);
+// app.use("/api/cms", cmsCors, caseStudiesTechnologies);
 app.use("/api/cms", cmsCors, caseStudies);
 
 // Public
@@ -109,10 +113,11 @@ app.use("/api/public", publicCors, articleTagsPublic);
 app.use("/api/public", publicCors, articlePublic);
 app.use("/api/public", publicCors, eventPublic);
 app.use("/api/public", publicCors, caseStudiesPublic);
-app.use("/api/public", publicCors, caseStudiesCategoriesPublic);
-app.use("/api/public", publicCors, caseStudiesTechnologiesPublic);
+// app.use("/api/public", publicCors, caseStudiesCategoriesPublic);
+// app.use("/api/public", publicCors, caseStudiesTechnologiesPublic);
 
 // File
 app.use("/uploads", fileMedia);
+ContentSchedulerService.startScheduler();
 
 export default app;

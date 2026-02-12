@@ -4,14 +4,6 @@ import {
   caseStudyInclude,
   transformCaseStudy,
 } from "../../../includes/cms/caseStudiesInclude";
-import {
-  parseCapabilities,
-  parseCaseStudyImages,
-  parseIndustries,
-  parseSeoKeywords,
-  parseSolutions,
-  parseTechnologies,
-} from "../../../utils/parseHelper";
 import { validateCaseStudyData } from "../../../validators/caseStudyValidator";
 import {
   buildCMSCaseStudyPaginationParams,
@@ -19,6 +11,7 @@ import {
   buildCMSCaseStudyWhereCondition,
 } from "../../../utils/queryBuilder/cms/caseStudies/caseStudies";
 import sanitizeHtml from "sanitize-html";
+import { generateSlug } from "../../../utils/generateSlug";
 
 export const getCaseStudies = async (req: Request, res: Response) => {
   try {
@@ -34,20 +27,18 @@ export const getCaseStudies = async (req: Request, res: Response) => {
       search,
       status,
       isFeatured,
-      solutionSlug,
-      industrySlug,
-      capabilitySlug,
-      year,
+      serviceId,
+      industryId,
+      client,
     } = req.query;
 
     const where = buildCMSCaseStudyWhereCondition({
       search: search as string,
       status: status as string,
       isFeatured: isFeatured as string,
-      solutionSlug: solutionSlug as string,
-      industrySlug: industrySlug as string,
-      capabilitySlug: capabilitySlug as string,
-      year: year as string,
+      serviceId: serviceId as string,
+      industryId: industryId as string,
+      client: client as string,
     });
 
     const pagination = buildCMSCaseStudyPaginationParams(
@@ -69,6 +60,12 @@ export const getCaseStudies = async (req: Request, res: Response) => {
       }),
       prisma.caseStudy.count({ where }),
     ]);
+
+    res.set({
+      "Cache-Control": "private, no-cache, no-store, must-revalidate",
+      Pragma: "no-cache",
+      Expires: "0",
+    });
 
     return res.status(200).json({
       data: caseStudies.map(transformCaseStudy),
@@ -112,28 +109,26 @@ export const getCaseStudyById = async (req: Request, res: Response) => {
       return res.status(404).json({ message: "Case study not found" });
     }
 
+    res.set({
+      "Cache-Control": "private, no-cache, no-store, must-revalidate",
+      Pragma: "no-cache",
+      Expires: "0",
+    });
+
     return res.status(200).json({
       status: "success",
       data: transformCaseStudy(caseStudy),
     });
   } catch (error) {
-    console.error("Error fetching case studies:", error);
+    console.error("Error fetching case study:", error);
 
     const message =
       process.env.NODE_ENV === "production"
-        ? "Failed to fetch case studies"
+        ? "Failed to fetch case study"
         : (error as Error).message;
 
     res.status(500).json({ message });
   }
-};
-
-const generateSlug = (text: string) => {
-  return text
-    .toLowerCase()
-    .trim()
-    .replace(/[^\w\s-]/g, "")
-    .replace(/\s+/g, "-");
 };
 
 const resolveCreateCaseStudySlug = (slug?: string, title?: string) => {
@@ -157,28 +152,28 @@ export const createCaseStudy = async (req: Request, res: Response) => {
     const {
       title,
       slug,
-      summary,
-      content,
-      description,
+      overview,
       problem,
       solution,
+      outcomesDesc,
+      outcomes,
       client,
       year,
       status,
       metaTitle,
       metaDescription,
+      seoKeywords,
       publishedAt,
       isFeatured,
       thumbnailId,
-      solutions,
-      industries,
-      capabilities,
-      seoKeywords,
+      publicationId,
+      serviceId,
+      industryId,
     } = req.body;
 
-    const cleanContent =
-      typeof content === "string"
-        ? sanitizeHtml(content, {
+    const cleanOverview =
+      typeof overview === "string"
+        ? sanitizeHtml(overview, {
             allowedTags: sanitizeHtml.defaults.allowedTags.concat([
               "h1",
               "h2",
@@ -196,34 +191,138 @@ export const createCaseStudy = async (req: Request, res: Response) => {
           })
         : "";
 
-    let parsedSolutions,
-      parsedIndustries,
-      parsedCapabilities,
-      parsedSeoKeywords;
-    try {
-      parsedSolutions = parseSolutions(solutions);
-      parsedIndustries = parseIndustries(industries);
-      parsedCapabilities = parseCapabilities(capabilities);
-      parsedSeoKeywords = parseSeoKeywords(seoKeywords);
-    } catch (error) {
-      return res.status(400).json({
-        message: error instanceof Error ? error.message : "Invalid format",
-      });
+    const cleanProblem =
+      typeof problem === "string"
+        ? sanitizeHtml(problem, {
+            allowedTags: sanitizeHtml.defaults.allowedTags.concat([
+              "h1",
+              "h2",
+              "h3",
+              "h4",
+              "h5",
+              "h6",
+              "img",
+              "span",
+            ]),
+            allowedAttributes: false,
+            allowedSchemes: ["http", "https", "data"],
+            disallowedTagsMode: "discard",
+            nonBooleanAttributes: ["style"],
+          })
+        : "";
+
+    const cleanSolution =
+      typeof solution === "string"
+        ? sanitizeHtml(solution, {
+            allowedTags: sanitizeHtml.defaults.allowedTags.concat([
+              "h1",
+              "h2",
+              "h3",
+              "h4",
+              "h5",
+              "h6",
+              "img",
+              "span",
+            ]),
+            allowedAttributes: false,
+            allowedSchemes: ["http", "https", "data"],
+            disallowedTagsMode: "discard",
+            nonBooleanAttributes: ["style"],
+          })
+        : "";
+
+    const cleanOutcomesDesc =
+      typeof outcomesDesc === "string"
+        ? sanitizeHtml(outcomesDesc, {
+            allowedTags: sanitizeHtml.defaults.allowedTags.concat([
+              "h1",
+              "h2",
+              "h3",
+              "h4",
+              "h5",
+              "h6",
+              "img",
+              "span",
+            ]),
+            allowedAttributes: false,
+            allowedSchemes: ["http", "https", "data"],
+            disallowedTagsMode: "discard",
+            nonBooleanAttributes: ["style"],
+          })
+        : "";
+
+    let parsedSeoKeywords: string[] = [];
+    if (seoKeywords) {
+      try {
+        if (typeof seoKeywords === "string") {
+          parsedSeoKeywords = JSON.parse(seoKeywords);
+        } else if (Array.isArray(seoKeywords)) {
+          parsedSeoKeywords = seoKeywords;
+        } else {
+          return res.status(400).json({
+            message: "seoKeywords must be an array of strings",
+          });
+        }
+
+        if (!parsedSeoKeywords.every((k) => typeof k === "string")) {
+          return res.status(400).json({
+            message: "All SEO keywords must be strings",
+          });
+        }
+      } catch (error) {
+        return res.status(400).json({
+          message: "Invalid seoKeywords format",
+        });
+      }
+    }
+
+    let parsedOutcomes: Array<{ metric: string; value: string }> = [];
+    if (outcomes) {
+      try {
+        if (typeof outcomes === "string") {
+          parsedOutcomes = JSON.parse(outcomes);
+        } else if (Array.isArray(outcomes)) {
+          parsedOutcomes = outcomes;
+        } else {
+          return res.status(400).json({
+            message: "outcomes must be an array of objects",
+          });
+        }
+
+        const isValid = parsedOutcomes.every(
+          (o) =>
+            typeof o === "object" &&
+            (o.metric === null || typeof o.metric === "string") &&
+            (o.value === null || typeof o.value === "string"),
+        );
+
+        if (!isValid) {
+          return res.status(400).json({
+            message: "Each outcome must have 'metric' and 'value' properties",
+          });
+        }
+      } catch (error) {
+        return res.status(400).json({
+          message: "Invalid outcomes format",
+        });
+      }
     }
 
     const validationErrors = validateCaseStudyData({
       title,
       slug,
-      summary,
-      content,
-      description,
-      problem,
-      solution,
+      overview: cleanOverview,
+      problem: cleanProblem,
+      solution: cleanSolution,
+      outcomesDesc: cleanOutcomesDesc,
+      outcomes: parsedOutcomes,
       client,
       status,
-      solutions: parsedSolutions,
-      industries: parsedIndustries,
-      capabilities: parsedCapabilities,
+      metaTitle,
+      metaDescription,
+      seoKeywords: parsedSeoKeywords,
+      serviceId,
+      industryId,
     });
 
     if (validationErrors.length > 0) {
@@ -232,52 +331,20 @@ export const createCaseStudy = async (req: Request, res: Response) => {
       });
     }
 
-    if (parsedSolutions.length > 0) {
-      const solutionsExist = await prisma.solution.findMany({
-        where: {
-          id: { in: parsedSolutions },
-          deletedAt: null,
-          isActive: true,
-        },
-      });
+    const serviceExists = await prisma.service.findUnique({
+      where: { id: serviceId },
+    });
 
-      if (solutionsExist.length !== parsedSolutions.length) {
-        return res.status(400).json({
-          message: "One or more solutions not found or inactive",
-        });
-      }
+    if (!serviceExists) {
+      return res.status(400).json({ message: "Service does not exist" });
     }
 
-    if (parsedIndustries.length > 0) {
-      const industriesExist = await prisma.industry.findMany({
-        where: {
-          id: { in: parsedIndustries },
-          deletedAt: null,
-          isActive: true,
-        },
-      });
+    const industryExists = await prisma.industry.findUnique({
+      where: { id: industryId },
+    });
 
-      if (industriesExist.length !== parsedIndustries.length) {
-        return res.status(400).json({
-          message: "One or more industries not found or inactive",
-        });
-      }
-    }
-
-    if (parsedCapabilities.length > 0) {
-      const capabilitiesExist = await prisma.capability.findMany({
-        where: {
-          id: { in: parsedCapabilities },
-          deletedAt: null,
-          isActive: true,
-        },
-      });
-
-      if (capabilitiesExist.length !== parsedCapabilities.length) {
-        return res.status(400).json({
-          message: "One or more capabilities not found or inactive",
-        });
-      }
+    if (!industryExists) {
+      return res.status(400).json({ message: "Industry does not exist" });
     }
 
     const finalSlug = resolveCreateCaseStudySlug(slug, title);
@@ -309,58 +376,42 @@ export const createCaseStudy = async (req: Request, res: Response) => {
       selectedThumbnailId = thumbnailId;
     }
 
+    let selectedPublicationId: string | null = null;
+    if (publicationId) {
+      const mediaExists = await prisma.media.findUnique({
+        where: { id: publicationId },
+      });
+      if (!mediaExists) {
+        return res.status(400).json({
+          message: `Publication media with ID ${publicationId} not found`,
+        });
+      }
+      selectedPublicationId = publicationId;
+    }
+
     const caseStudyData: any = {
       title,
       slug: finalSlug,
-      summary,
-      content: cleanContent,
-      description,
-      problem,
-      solution,
+      overview: cleanOverview,
+      problem: cleanProblem,
+      solution: cleanSolution,
+      outcomesDesc: cleanOutcomesDesc,
+      outcomes: parsedOutcomes,
       client,
       year,
       status,
       metaTitle,
       metaDescription,
-      publishedAt,
-      isFeatured,
+      serviceId,
+      industryId,
+      seoKeywords: parsedSeoKeywords.length > 0 ? parsedSeoKeywords : null,
+      publishedAt: publishedAt ? new Date(publishedAt) : null,
+      isFeatured: isFeatured ?? false,
       thumbnailId: selectedThumbnailId,
+      publicationId: selectedPublicationId,
       createdBy: req.user.id,
       updatedBy: req.user.id,
     };
-
-    if (parsedSolutions.length > 0) {
-      caseStudyData.solutions = {
-        create: parsedSolutions.map((solutionId: string) => ({
-          solutionId: solutionId,
-        })),
-      };
-    }
-
-    if (parsedIndustries.length > 0) {
-      caseStudyData.industries = {
-        create: parsedIndustries.map((industryId: string) => ({
-          industryId: industryId,
-        })),
-      };
-    }
-
-    if (parsedCapabilities.length > 0) {
-      caseStudyData.capabilities = {
-        create: parsedCapabilities.map((capabilityId: string) => ({
-          capabilityId: capabilityId,
-        })),
-      };
-    }
-
-    if (parsedSeoKeywords.length > 0) {
-      caseStudyData.seoKeywords = {
-        create: parsedSeoKeywords.map((item) => ({
-          keyword: item.keyword,
-          order: item.order || 0,
-        })),
-      };
-    }
 
     const caseStudy = await prisma.caseStudy.create({
       data: caseStudyData,
@@ -398,23 +449,23 @@ export const updateCaseStudy = async (req: Request, res: Response) => {
     const {
       title,
       slug,
-      summary,
-      content,
-      description,
+      overview,
       problem,
       solution,
+      outcomesDesc,
+      outcomes,
       client,
       year,
       status,
       metaTitle,
       metaDescription,
+      seoKeywords,
       publishedAt,
       isFeatured,
       thumbnailId,
-      solutions,
-      industries,
-      capabilities,
-      seoKeywords,
+      publicationId,
+      serviceId,
+      industryId,
     } = req.body;
 
     const existingCaseStudy = await prisma.caseStudy.findFirst({
@@ -425,9 +476,9 @@ export const updateCaseStudy = async (req: Request, res: Response) => {
       return res.status(404).json({ message: "Case study not found" });
     }
 
-    const cleanContent =
-      typeof content === "string"
-        ? sanitizeHtml(content, {
+    const cleanOverview =
+      typeof overview === "string"
+        ? sanitizeHtml(overview, {
             allowedTags: sanitizeHtml.defaults.allowedTags.concat([
               "h1",
               "h2",
@@ -443,39 +494,159 @@ export const updateCaseStudy = async (req: Request, res: Response) => {
             disallowedTagsMode: "discard",
             nonBooleanAttributes: ["style"],
           })
-        : existingCaseStudy.content;
+        : existingCaseStudy.overview;
 
-    let parsedSolutions,
-      parsedIndustries,
-      parsedCapabilities,
-      parsedSeoKeywords;
-    try {
-      parsedSolutions = parseSolutions(solutions);
-      parsedIndustries = parseIndustries(industries);
-      parsedCapabilities = parseCapabilities(capabilities);
-      parsedSeoKeywords = parseSeoKeywords(seoKeywords);
-    } catch (error) {
-      return res.status(400).json({
-        message: error instanceof Error ? error.message : "Invalid format",
-      });
+    const cleanProblem =
+      typeof problem === "string"
+        ? sanitizeHtml(problem, {
+            allowedTags: sanitizeHtml.defaults.allowedTags.concat([
+              "h1",
+              "h2",
+              "h3",
+              "h4",
+              "h5",
+              "h6",
+              "img",
+              "span",
+            ]),
+            allowedAttributes: false,
+            allowedSchemes: ["http", "https", "data"],
+            disallowedTagsMode: "discard",
+            nonBooleanAttributes: ["style"],
+          })
+        : existingCaseStudy.problem;
+
+    const cleanSolution =
+      typeof solution === "string"
+        ? sanitizeHtml(solution, {
+            allowedTags: sanitizeHtml.defaults.allowedTags.concat([
+              "h1",
+              "h2",
+              "h3",
+              "h4",
+              "h5",
+              "h6",
+              "img",
+              "span",
+            ]),
+            allowedAttributes: false,
+            allowedSchemes: ["http", "https", "data"],
+            disallowedTagsMode: "discard",
+            nonBooleanAttributes: ["style"],
+          })
+        : existingCaseStudy.solution;
+
+    const cleanOutcomesDesc =
+      typeof outcomesDesc === "string"
+        ? sanitizeHtml(outcomesDesc, {
+            allowedTags: sanitizeHtml.defaults.allowedTags.concat([
+              "h1",
+              "h2",
+              "h3",
+              "h4",
+              "h5",
+              "h6",
+              "img",
+              "span",
+            ]),
+            allowedAttributes: false,
+            allowedSchemes: ["http", "https", "data"],
+            disallowedTagsMode: "discard",
+            nonBooleanAttributes: ["style"],
+          })
+        : existingCaseStudy.outcomesDesc;
+
+    let parsedSeoKeywords: string[] = [];
+    if (seoKeywords) {
+      try {
+        if (typeof seoKeywords === "string") {
+          parsedSeoKeywords = JSON.parse(seoKeywords);
+        } else if (Array.isArray(seoKeywords)) {
+          parsedSeoKeywords = seoKeywords;
+        } else {
+          return res.status(400).json({
+            message: "seoKeywords must be an array of strings",
+          });
+        }
+
+        if (!parsedSeoKeywords.every((k) => typeof k === "string")) {
+          return res.status(400).json({
+            message: "All SEO keywords must be strings",
+          });
+        }
+      } catch (error) {
+        return res.status(400).json({
+          message: "Invalid seoKeywords format",
+        });
+      }
+    }
+
+    type Outcome = { metric: string | null; value: string | null };
+
+    let parsedOutcomes: Outcome[] = [];
+
+    if (Array.isArray(existingCaseStudy.outcomes)) {
+      parsedOutcomes = existingCaseStudy.outcomes as Outcome[];
+    }
+
+    if (outcomes !== undefined) {
+      try {
+        if (typeof outcomes === "string") {
+          parsedOutcomes = JSON.parse(outcomes);
+        } else if (Array.isArray(outcomes)) {
+          parsedOutcomes = outcomes;
+        } else {
+          return res.status(400).json({
+            message: "outcomes must be an array of objects",
+          });
+        }
+
+        parsedOutcomes = parsedOutcomes.map((o) => ({
+          metric:
+            typeof o?.metric === "string" && o.metric.trim() !== ""
+              ? o.metric.trim()
+              : null,
+          value:
+            typeof o?.value === "string" && o.value.trim() !== ""
+              ? o.value.trim()
+              : null,
+        }));
+
+        const isValid = parsedOutcomes.every(
+          (o) =>
+            o &&
+            (o.metric === null || typeof o.metric === "string") &&
+            (o.value === null || typeof o.value === "string"),
+        );
+
+        if (!isValid) {
+          return res.status(400).json({
+            message: "Invalid outcome format",
+          });
+        }
+      } catch (error) {
+        return res.status(400).json({
+          message: "Invalid outcomes format",
+        });
+      }
     }
 
     const validationErrors = validateCaseStudyData(
       {
         title,
         slug,
-        summary,
-        content,
-        description,
-        problem,
-        solution,
+        overview: cleanOverview,
+        problem: cleanProblem,
+        solution: cleanSolution,
+        outcomesDesc: cleanOutcomesDesc,
+        outcomes: parsedOutcomes,
         client,
         status,
         metaTitle,
         metaDescription,
-        solutions: parsedSolutions,
-        industries: parsedIndustries,
-        capabilities: parsedCapabilities,
+        serviceId,
+        industryId,
+        seoKeywords: parsedSeoKeywords,
       },
       true,
     );
@@ -486,51 +657,23 @@ export const updateCaseStudy = async (req: Request, res: Response) => {
       });
     }
 
-    if (parsedSolutions.length > 0) {
-      const solutionsExist = await prisma.solution.findMany({
-        where: {
-          id: { in: parsedSolutions },
-          deletedAt: null,
-          isActive: true,
-        },
+    if (serviceId) {
+      const serviceExists = await prisma.service.findUnique({
+        where: { id: serviceId },
       });
 
-      if (solutionsExist.length !== parsedSolutions.length) {
-        return res.status(400).json({
-          message: "One or more solutions not found or inactive",
-        });
+      if (!serviceExists) {
+        return res.status(404).json({ message: "Service not found" });
       }
     }
 
-    if (parsedIndustries.length > 0) {
-      const industriesExist = await prisma.industry.findMany({
-        where: {
-          id: { in: parsedIndustries },
-          deletedAt: null,
-          isActive: true,
-        },
+    if (industryId) {
+      const industryExists = await prisma.industry.findUnique({
+        where: { id: industryId },
       });
 
-      if (industriesExist.length !== parsedIndustries.length) {
-        return res.status(400).json({
-          message: "One or more industries not found or inactive",
-        });
-      }
-    }
-
-    if (parsedCapabilities.length > 0) {
-      const capabilitiesExist = await prisma.capability.findMany({
-        where: {
-          id: { in: parsedCapabilities },
-          deletedAt: null,
-          isActive: true,
-        },
-      });
-
-      if (capabilitiesExist.length !== parsedCapabilities.length) {
-        return res.status(400).json({
-          message: "One or more capabilities not found or inactive",
-        });
+      if (!industryExists) {
+        return res.status(404).json({ message: "Industry not found" });
       }
     }
 
@@ -567,61 +710,39 @@ export const updateCaseStudy = async (req: Request, res: Response) => {
       selectedThumbnailId = thumbnailId;
     }
 
+    let selectedPublicationId: string | null = existingCaseStudy.publicationId;
+    if (publicationId) {
+      const mediaExists = await prisma.media.findUnique({
+        where: { id: publicationId },
+      });
+      if (!mediaExists) {
+        return res.status(400).json({
+          message: `Publication media with ID ${publicationId} not found`,
+        });
+      }
+      selectedPublicationId = publicationId;
+    }
+
     const caseStudyData: any = {
       title,
       slug: finalSlug,
-      summary,
-      content: cleanContent,
-      description,
-      problem,
-      solution,
+      overview: cleanOverview,
+      problem: cleanProblem,
+      solution: cleanSolution,
+      outcomesDesc: cleanOutcomesDesc,
+      outcomes: parsedOutcomes,
       client,
       year,
       status,
       metaTitle,
       metaDescription,
-      publishedAt,
-      isFeatured,
+      seoKeywords: parsedSeoKeywords.length > 0 ? parsedSeoKeywords : null,
+      publishedAt: publishedAt ? new Date(publishedAt) : null,
+      isFeatured: isFeatured ?? existingCaseStudy.isFeatured,
       thumbnailId: selectedThumbnailId,
+      publicationId: selectedPublicationId,
       updatedBy: req.user.id,
     };
-
-    if (parsedSolutions.length > 0) {
-      caseStudyData.solutions = {
-        deleteMany: {},
-        create: parsedSolutions.map((solutionId: string) => ({
-          solutionId: solutionId,
-        })),
-      };
-    }
-
-    if (parsedIndustries.length > 0) {
-      caseStudyData.industries = {
-        deleteMany: {},
-        create: parsedIndustries.map((industryId: string) => ({
-          industryId: industryId,
-        })),
-      };
-    }
-
-    if (parsedCapabilities.length > 0) {
-      caseStudyData.capabilities = {
-        deleteMany: {},
-        create: parsedCapabilities.map((capabilityId: string) => ({
-          capabilityId: capabilityId,
-        })),
-      };
-    }
-
-    if (parsedSeoKeywords.length > 0) {
-      caseStudyData.seoKeywords = {
-        deleteMany: {},
-        create: parsedSeoKeywords.map((item) => ({
-          keyword: item.keyword,
-          order: item.order || 0,
-        })),
-      };
-    }
 
     const caseStudy = await prisma.caseStudy.update({
       where: { id },

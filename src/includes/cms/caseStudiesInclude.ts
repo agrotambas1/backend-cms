@@ -7,40 +7,28 @@ export const caseStudyInclude = {
       url: true,
     },
   },
-  solutions: {
+  publication: {
     select: {
-      solution: {
-        select: {
-          id: true,
-          name: true,
-          slug: true,
-          description: true,
-        },
-      },
+      id: true,
+      fileName: true,
+      altText: true,
+      url: true,
     },
   },
-  industries: {
+  service: {
     select: {
-      industry: {
-        select: {
-          id: true,
-          name: true,
-          slug: true,
-          description: true,
-        },
-      },
+      id: true,
+      name: true,
+      slug: true,
+      description: true,
     },
   },
-  capabilities: {
+  industry: {
     select: {
-      capability: {
-        select: {
-          id: true,
-          name: true,
-          slug: true,
-          description: true,
-        },
-      },
+      id: true,
+      name: true,
+      slug: true,
+      description: true,
     },
   },
   creator: {
@@ -55,21 +43,10 @@ export const caseStudyInclude = {
       name: true,
     },
   },
-  seoKeywords: {
-    select: {
-      id: true,
-      keyword: true,
-      order: true,
-    },
-    orderBy: {
-      order: "asc" as const,
-    },
-  },
 };
 
 export const transformCaseStudy = (caseStudy: any) => ({
   ...caseStudy,
-  solutions: caseStudy.solutions?.map((cs: any) => cs.solution) || [],
-  industries: caseStudy.industries?.map((ci: any) => ci.industry) || [],
-  capabilities: caseStudy.capabilities?.map((cc: any) => cc.capability) || [],
+  outcomes: caseStudy.outcomes || [],
+  seoKeywords: caseStudy.seoKeywords || [],
 });

@@ -19,15 +19,15 @@ export const getPublicCaseStudies = async (req: Request, res: Response) => {
       limit = "10",
       sortBy,
       order,
-      categorySlug,
-      technologySlug,
+      serviceSlug,
+      industrySlug,
       search,
       isFeatured,
     } = req.query;
 
     const where = buildPublicCaseStudyWhereCondition({
-      categorySlug: categorySlug as string,
-      technologySlug: technologySlug as string,
+      serviceSlug: serviceSlug as string,
+      industrySlug: industrySlug as string,
       search: search as string,
       isFeatured: isFeatured as string,
     });
@@ -112,8 +112,7 @@ export const getPublicCaseStudyBySlug = async (req: Request, res: Response) => {
     }
 
     res.set({
-      "Cache-Control": "public, max-age=1800, s-maxage=7200",
-      "Last-Modified": caseStudy.publishedAt?.toUTCString() || "",
+      "Cache-Control": "public, max-age=600, s-maxage=3600",
     });
 
     return res.status(200).json({

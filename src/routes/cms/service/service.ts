@@ -2,42 +2,42 @@ import express from "express";
 import { authMiddleware } from "../../../middleware/authMiddleware";
 import { adminOnly } from "../../../middleware/permission";
 import {
-  getSolutions,
-  getSolutionById,
-  createSolution,
-  updateSolution,
-  deleteSolution,
-} from "../../../controllers/cms/solutions/solutionController";
+  getServices,
+  getServiceById,
+  createService,
+  updateService,
+  deleteService,
+} from "../../../controllers/cms/service/serviceController";
 
 const router = express.Router();
 
 router.use(authMiddleware);
 
-router.get("/solutions", adminOnly, getSolutions);
+router.get("/services", getServices);
 
-router.get("/solutions/:id", adminOnly, getSolutionById);
+// router.get("/services/:id", getServiceById);
 
-router.post("/solutions", adminOnly, createSolution);
+router.post("/services", adminOnly, createService);
 
-router.put("/solutions/:id", adminOnly, updateSolution);
+router.put("/services/:id", adminOnly, updateService);
 
-router.delete("/solutions/:id", adminOnly, deleteSolution);
+router.delete("/services/:id", adminOnly, deleteService);
 
 export default router;
 
 /**
  * @swagger
  * tags:
- *   name: Solutions
- *   description: Solution management endpoints
+ *   name: Services
+ *   description: Service management endpoints
  */
 
 /**
  * @swagger
- * /api/cms/solutions:
+ * /api/cms/services:
  *   get:
- *     summary: Get all solutions with pagination and filters
- *     tags: [Solutions]
+ *     summary: Get all services with pagination and filters
+ *     tags: [Services]
  *     security:
  *       - bearerAuth: []
  *     responses:
@@ -48,49 +48,49 @@ export default router;
  *             schema:
  *               type: array
  *               items:
- *                 $ref: '#/components/schemas/Solution'
+ *                 $ref: '#/components/schemas/Service'
  *       401:
  *         description: Unauthorized
  *       500:
  *         description: Server error
  */
 
-/**
- * @swagger
- * /api/cms/solutions/{id}:
- *   get:
- *     summary: Get a solution by ID
- *     tags: [Solutions]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *         description: Article ID
- *     responses:
- *       200:
- *         description: A list of tags
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/Solution'
- *       401:
- *         description: Unauthorized
- *       500:
- *         description: Server error
- */
+// /**
+//  * @swagger
+//  * /api/cms/services/{id}:
+//  *   get:
+//  *     summary: Get a solution by ID
+//  *     tags: [Services]
+//  *     security:
+//  *       - bearerAuth: []
+//  *     parameters:
+//  *       - in: path
+//  *         name: id
+//  *         required: true
+//  *         schema:
+//  *           type: string
+//  *         description: Article ID
+//  *     responses:
+//  *       200:
+//  *         description: A list of tags
+//  *         content:
+//  *           application/json:
+//  *             schema:
+//  *               type: array
+//  *               items:
+//  *                 $ref: '#/components/schemas/Service'
+//  *       401:
+//  *         description: Unauthorized
+//  *       500:
+//  *         description: Server error
+//  */
 
 /**
  * @swagger
- * /api/cms/solutions:
+ * /api/cms/services:
  *   post:
  *     summary: Create a new solution
- *     tags: [Solutions]
+ *     tags: [Services]
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -98,10 +98,10 @@ export default router;
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/CreateSolution'
+ *             $ref: '#/components/schemas/CreateService'
  *     responses:
  *       201:
- *         description: Solution created successfully
+ *         description: Service created successfully
  *         content:
  *           application/json:
  *             schema:
@@ -114,10 +114,10 @@ export default router;
  *                   type: object
  *                   properties:
  *                     solution:
- *                       $ref: '#/components/schemas/Solution'
+ *                       $ref: '#/components/schemas/Service'
  *                 message:
  *                   type: string
- *                   example: Solution created successfully
+ *                   example: Service created successfully
  *       400:
  *         description: Validation failed
  *         content:
@@ -132,21 +132,21 @@ export default router;
  *                   type: array
  *                   items:
  *                     type: string
- *                   example: ["Solution name is required"]
+ *                   example: ["Service name is required"]
  *       401:
  *         description: Unauthorized
  *       409:
- *         description: Solution with same slug already exists
+ *         description: Service with same slug already exists
  *       500:
  *         description: Server error
  */
 
 /**
  * @swagger
- * /api/cms/solutions/{id}:
+ * /api/cms/services/{id}:
  *   put:
  *     summary: Update a solution by ID
- *     tags: [Solutions]
+ *     tags: [Services]
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -156,16 +156,16 @@ export default router;
  *         schema:
  *           type: string
  *           format: uuid
- *         description: Solution ID
+ *         description: Service ID
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/UpdateSolution'
+ *             $ref: '#/components/schemas/UpdateService'
  *     responses:
  *       200:
- *         description: Solution updated successfully
+ *         description: Service updated successfully
  *         content:
  *           application/json:
  *             schema:
@@ -178,28 +178,28 @@ export default router;
  *                   type: object
  *                   properties:
  *                     solution:
- *                       $ref: '#/components/schemas/Solution'
+ *                       $ref: '#/components/schemas/Service'
  *                 message:
  *                   type: string
- *                   example: Solution updated successfully
+ *                   example: Service updated successfully
  *       400:
  *         description: Validation failed or invalid ID
  *       401:
  *         description: Unauthorized
  *       404:
- *         description: Solution not found
+ *         description: Service not found
  *       409:
- *         description: Solution with same slug already exists
+ *         description: Service with same slug already exists
  *       500:
  *         description: Server error
  */
 
 /**
  * @swagger
- * /api/cms/solutions/{id}:
+ * /api/cms/services/{id}:
  *   delete:
  *     summary: Delete a solution by ID (soft delete)
- *     tags: [Solutions]
+ *     tags: [Services]
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -209,10 +209,10 @@ export default router;
  *         schema:
  *           type: string
  *           format: uuid
- *         description: Solution ID
+ *         description: Service ID
  *     responses:
  *       200:
- *         description: Solution deleted successfully
+ *         description: Service deleted successfully
  *         content:
  *           application/json:
  *             schema:
@@ -223,13 +223,13 @@ export default router;
  *                   example: success
  *                 message:
  *                   type: string
- *                   example: Solution deleted successfully
+ *                   example: Service deleted successfully
  *       400:
  *         description: Invalid ID
  *       401:
  *         description: Unauthorized
  *       404:
- *         description: Solution not found
+ *         description: Service not found
  *       409:
  *         description: Cannot delete - solution is in use
  *         content:

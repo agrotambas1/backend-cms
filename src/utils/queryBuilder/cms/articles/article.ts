@@ -1,11 +1,13 @@
 import { Prisma } from "@prisma/client";
 
 interface CMSArticleFilterParams {
-  categorySlug?: string;
-  tagSlug?: string;
+  categoryId?: string;
+  tagId?: string;
   search?: string;
   status?: string;
   isFeatured?: string;
+  serviceId?: string;
+  industryId?: string;
 }
 
 export const buildCMSArticleWhereCondition = (
@@ -23,28 +25,38 @@ export const buildCMSArticleWhereCondition = (
     whereCondition.isFeatured = params.isFeatured === "true";
   }
 
-  if (params.categorySlug) {
+  if (params.categoryId) {
     whereCondition.category = {
-      slug: params.categorySlug,
+      id: params.categoryId,
       deletedAt: null,
     };
   }
 
-  if (params.tagSlug) {
+  if (params.tagId) {
     whereCondition.tags = {
       some: {
         tag: {
-          slug: params.tagSlug,
+          id: params.tagId,
           deletedAt: null,
         },
       },
     };
   }
 
+  if (params.serviceId) {
+    whereCondition.serviceId = params.serviceId;
+  }
+
+  if (params.industryId) {
+    whereCondition.industryId = params.industryId;
+  }
+
   if (params.search) {
     whereCondition.OR = [
       { title: { contains: params.search, mode: "insensitive" as const } },
       { excerpt: { contains: params.search, mode: "insensitive" as const } },
+      { metaTitle: { contains: params.search, mode: "insensitive" } },
+      { metaDescription: { contains: params.search, mode: "insensitive" } },
     ];
   }
 

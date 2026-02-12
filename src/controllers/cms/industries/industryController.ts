@@ -6,6 +6,7 @@ import {
   buildCMSIndustryWhereCondition,
 } from "../../../utils/queryBuilder/cms/industries/industry";
 import { validateIndustryData } from "../../../validators/industries/industryValidator";
+import { generateSlug } from "../../../utils/generateSlug";
 
 export const getIndustries = async (req: Request, res: Response) => {
   try {
@@ -47,18 +48,15 @@ export const getIndustries = async (req: Request, res: Response) => {
           name: true,
           slug: true,
           description: true,
-          icon: true,
-          color: true,
-          order: true,
           isActive: true,
           createdAt: true,
-          _count: {
-            select: {
-              caseStudies: true,
-              // events: true,
-              // articles: true,
-            },
-          },
+          // _count: {
+          //   select: {
+          //     caseStudies: true,
+          //     events: true,
+          //     articles: true,
+          //   },
+          // },
         },
       }),
       prisma.industry.count({ where }),
@@ -102,15 +100,15 @@ export const getIndustryById = async (req: Request, res: Response) => {
         id,
         deletedAt: null,
       },
-      include: {
-        _count: {
-          select: {
-            caseStudies: true,
-            // events: true,
-            // articles: true,
-          },
-        },
-      },
+      // include: {
+      //   _count: {
+      //     select: {
+      //       caseStudies: true,
+      //       events: true,
+      //       articles: true,
+      //     },
+      //   },
+      // },
     });
 
     if (!industry) {
@@ -132,14 +130,6 @@ export const getIndustryById = async (req: Request, res: Response) => {
   }
 };
 
-const generateSlug = (text: string) => {
-  return text
-    .toLowerCase()
-    .trim()
-    .replace(/[^\w\s-]/g, "")
-    .replace(/\s+/g, "-");
-};
-
 export const createIndustry = async (req: Request, res: Response) => {
   try {
     if (!req.user?.id) {
@@ -155,7 +145,7 @@ export const createIndustry = async (req: Request, res: Response) => {
       });
     }
 
-    const { name, slug, description, icon, color, order, isActive } = req.body;
+    const { name, slug, description, isActive } = req.body;
 
     const finalSlug = slug?.trim() ? slug : generateSlug(name);
 
@@ -177,9 +167,6 @@ export const createIndustry = async (req: Request, res: Response) => {
         name,
         slug: finalSlug,
         description: description || null,
-        icon: icon || null,
-        color: color || null,
-        order: order ?? 0,
         isActive: isActive ?? true,
       },
     });
@@ -226,15 +213,12 @@ export const updateIndustry = async (req: Request, res: Response) => {
       return res.status(404).json({ message: "Industry not found" });
     }
 
-    const { name, slug, description, icon, color, order, isActive } = req.body;
+    const { name, slug, description, isActive } = req.body;
 
     const updateData: any = {};
 
     if (name !== undefined) updateData.name = name;
     if (description !== undefined) updateData.description = description;
-    if (icon !== undefined) updateData.icon = icon;
-    if (color !== undefined) updateData.color = color;
-    if (order !== undefined) updateData.order = order;
     if (isActive !== undefined) updateData.isActive = isActive;
 
     if (slug !== undefined || name !== undefined) {
@@ -301,8 +285,8 @@ export const deleteIndustry = async (req: Request, res: Response) => {
         _count: {
           select: {
             caseStudies: true,
-            // events: true,
-            // articles: true,
+            events: true,
+            articles: true,
           },
         },
       },
@@ -312,16 +296,18 @@ export const deleteIndustry = async (req: Request, res: Response) => {
       return res.status(404).json({ message: "Industry not found" });
     }
 
-    // const totalUsage = industry._count.caseStudies + industry._count.events;
-    const totalUsage = industry._count.caseStudies;
+    const totalUsage =
+      industry._count.caseStudies +
+      industry._count.events +
+      industry._count.articles;
 
     if (totalUsage > 0) {
       return res.status(409).json({
-        message: `Cannot delete industry. It is being used in ${totalUsage} content item(s)`,
+        message: `Cannot delete industry. It is being used in ${totalUsage} content item(s).`,
         usage: {
           caseStudies: industry._count.caseStudies,
-          // events: industry._count.events,
-          // articles: industry._count.articles,
+          events: industry._count.events,
+          articles: industry._count.articles,
         },
       });
     }

@@ -1,81 +1,12 @@
-// import { Prisma } from "@prisma/client";
-
-// interface CMSEventFilterParams {
-//   search?: string;
-//   status?: string;
-//   isFeatured?: string;
-//   locationType?: string;
-// }
-
-// export const buildCMSEventWhereCondition = (
-//   params: CMSEventFilterParams
-// ): Prisma.EventWhereInput => {
-//   const where: Prisma.EventWhereInput = {
-//     deletedAt: null,
-//   };
-
-//   if (params.status) {
-//     where.status = params.status;
-//   }
-
-//   if (params.isFeatured !== undefined && params.isFeatured !== "") {
-//     where.isFeatured = params.isFeatured === "true";
-//   }
-
-//   if (params.locationType) {
-//     where.locationType = params.locationType;
-//   }
-
-//   if (params.search) {
-//     where.OR = [
-//       { title: { contains: params.search, mode: "insensitive" } },
-//       { excerpt: { contains: params.search, mode: "insensitive" } },
-//       { content: { contains: params.search, mode: "insensitive" } },
-//       { location: { contains: params.search, mode: "insensitive" } },
-//     ];
-//   }
-
-//   return where;
-// };
-
-// export const buildCMSEventPaginationParams = (page = "1", limit = "10") => {
-//   const pageNum = Math.max(1, Number(page));
-//   const limitNum = Math.min(100, Math.max(1, Number(limit)));
-
-//   return {
-//     skip: (pageNum - 1) * limitNum,
-//     take: limitNum,
-//   };
-// };
-
-// export const buildCMSEventSortParams = (
-//   sortBy = "createdAt",
-//   order = "desc"
-// ): Prisma.EventOrderByWithRelationInput => {
-//   const validSortFields = [
-//     "createdAt",
-//     "updatedAt",
-//     "eventStart",
-//     "eventEnd",
-//     "title",
-//   ];
-
-//   const finalSortBy = validSortFields.includes(sortBy) ? sortBy : "createdAt";
-
-//   return {
-//     [finalSortBy]: order === "asc" ? "asc" : "desc",
-//   };
-// };
-
 import { Prisma } from "@prisma/client";
 
 interface CMSEventFilterParams {
   search?: string;
   status?: string;
-  isFeatured?: string;
   locationType?: string;
   eventType?: string;
-  solutionSlug?: string;
+  serviceId?: string;
+  industryId?: string;
 }
 
 export const buildCMSEventWhereCondition = (
@@ -89,10 +20,6 @@ export const buildCMSEventWhereCondition = (
     where.status = params.status;
   }
 
-  if (params.isFeatured !== undefined && params.isFeatured !== "") {
-    where.isFeatured = params.isFeatured === "true";
-  }
-
   if (params.locationType) {
     where.locationType = params.locationType;
   }
@@ -101,23 +28,19 @@ export const buildCMSEventWhereCondition = (
     where.eventType = params.eventType;
   }
 
-  if (params.solutionSlug) {
-    where.solutions = {
-      some: {
-        solution: {
-          slug: params.solutionSlug,
-          deletedAt: null,
-          isActive: true,
-        },
-      },
-    };
+  if (params.serviceId) {
+    where.serviceId = params.serviceId;
+  }
+
+  if (params.industryId) {
+    where.industryId = params.industryId;
   }
 
   if (params.search) {
     where.OR = [
-      { title: { contains: params.search, mode: "insensitive" } },
+      { eventName: { contains: params.search, mode: "insensitive" } },
       { excerpt: { contains: params.search, mode: "insensitive" } },
-      { content: { contains: params.search, mode: "insensitive" } },
+      { description: { contains: params.search, mode: "insensitive" } },
       { location: { contains: params.search, mode: "insensitive" } },
     ];
   }
@@ -136,18 +59,12 @@ export const buildCMSEventPaginationParams = (page = "1", limit = "10") => {
 };
 
 export const buildCMSEventSortParams = (
-  sortBy = "eventStart",
+  sortBy = "eventDate",
   order = "desc",
 ): Prisma.EventOrderByWithRelationInput => {
-  const validSortFields = [
-    "createdAt",
-    "updatedAt",
-    "eventStart",
-    "eventEnd",
-    "title",
-  ];
+  const validSortFields = ["createdAt", "updatedAt", "eventDate", "eventName"];
 
-  const finalSortBy = validSortFields.includes(sortBy) ? sortBy : "eventStart";
+  const finalSortBy = validSortFields.includes(sortBy) ? sortBy : "eventDate";
 
   return {
     [finalSortBy]: order === "asc" ? "asc" : "desc",

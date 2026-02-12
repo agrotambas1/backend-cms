@@ -13,7 +13,7 @@ const router = express.Router();
 
 router.use(authMiddleware);
 
-router.get("/article-categories", adminOnly, getCategories);
+router.get("/article-categories", getCategories);
 
 router.post("/article-categories", adminOnly, createCategory);
 

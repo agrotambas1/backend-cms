@@ -5,6 +5,8 @@ interface PublicArticleFilterParams {
   tagSlug?: string;
   search?: string;
   isFeatured?: string;
+  serviceSlug?: string;
+  industrySlug?: string;
 }
 
 export const buildPublicArticleWhereCondition = (
@@ -25,8 +27,6 @@ export const buildPublicArticleWhereCondition = (
   if (params.categorySlug) {
     whereCondition.category = {
       slug: params.categorySlug,
-      deletedAt: null,
-      isActive: true,
     };
   }
 
@@ -35,10 +35,20 @@ export const buildPublicArticleWhereCondition = (
       some: {
         tag: {
           slug: params.tagSlug,
-          deletedAt: null,
-          isActive: true,
         },
       },
+    };
+  }
+
+  if (params.serviceSlug) {
+    whereCondition.service = {
+      slug: params.serviceSlug,
+    };
+  }
+
+  if (params.industrySlug) {
+    whereCondition.industry = {
+      slug: params.industrySlug,
     };
   }
 
@@ -79,11 +89,12 @@ export const buildPublicArticlePaginationParams = (
 export const buildPublicArticleSortParams = (
   sortBy: string = "publishedAt",
   order: string = "desc",
-): Prisma.ArticleOrderByWithRelationInput => {
+): Prisma.ArticleOrderByWithRelationInput[] => {
   const validSortFields = ["publishedAt", "title", "viewCount"];
   const finalSortBy = validSortFields.includes(sortBy) ? sortBy : "publishedAt";
 
-  return {
-    [finalSortBy]: order === "asc" ? "asc" : "desc",
-  };
+  return [
+    { isFeatured: "desc" },
+    { [finalSortBy]: order === "asc" ? "asc" : "desc" },
+  ];
 };

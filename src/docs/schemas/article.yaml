@@ -141,6 +141,13 @@ components:
           type: string
           nullable: true
           description: SEO meta description
+        seoKeywords:
+          type: array
+          nullable: true
+          description: "Array of SEO keywords (max 10)"
+          items:
+            type: string
+            example: "digital transformation"
         status:
           type: string
           enum: [draft, published, scheduled, archived]
@@ -211,6 +218,14 @@ components:
                 type: string
               slug:
                 type: string
+        serviceId:
+          type: string
+          format: uuid
+          description: Case Study service
+        industryId:
+          type: string
+          format: uuid
+          description: Case Study industry
         creator:
           type: object
           properties:
@@ -226,17 +241,6 @@ components:
               type: string
             name:
               type: string
-        seoKeywords:
-          type: array
-          items:
-            type: object
-            properties:
-              id:
-                type: string
-              keyword:
-                type: string
-              order:
-                type: integer
 
     CreateArticle:
       type: object
@@ -281,6 +285,15 @@ components:
           nullable: true
           example: "SEO Description"
           description: SEO meta description
+        seoKeywords:
+          type: array
+          nullable: true
+          description: "Array of SEO keywords (optional, max 10)"
+          maxItems: 10
+          items:
+            type: string
+            maxLength: 50
+            example: "digital transformation"
         status:
           type: string
           enum: [draft, published, scheduled, archived]
@@ -310,10 +323,14 @@ components:
           type: string
           example: '["tag-uuid-1", "tag-uuid-2"]'
           description: JSON string array of tag IDs
-        seoKeywords:
+        serviceId:
           type: string
-          example: '[{"keyword": "typescript", "order": 0}]'
-          description: JSON string array of SEO keywords
+          format: uuid
+          description: Article service
+        industryId:
+          type: string
+          format: uuid
+          description: Article industry
 
     UpdateArticle:
       type: object
@@ -370,6 +387,18 @@ components:
           example: '["tag-uuid-1", "tag-uuid-2"]'
           description: JSON string array of tag IDs
         seoKeywords:
+          type: array
+          nullable: true
+          description: "Array of SEO keywords (max 10)"
+          maxItems: 10
+          items:
+            type: string
+            maxLength: 50
+        serviceId:
           type: string
-          example: '[{"keyword": "typescript", "order": 0}]'
-          description: JSON string array of SEO keywords
+          format: uuid
+          description: Case Study service
+        industryId:
+          type: string
+          format: uuid
+          description: Case Study industry
