@@ -8,19 +8,13 @@ import { swaggerSpec } from "./config/swagger";
 import auth from "./routes/cms/auth/auth";
 import media from "./routes/cms/media/media";
 import user from "./routes/cms/users/users";
-import banner from "./routes/cms/banner/banners";
 import services from "./routes/cms/service/service";
-import capabilities from "./routes/cms/capabilities/capability";
 import industries from "./routes/cms/industries/industry";
 import articleCategories from "./routes/cms/articles/categories";
 import articleTags from "./routes/cms/articles/tags";
 import article from "./routes/cms/articles/articles";
 import event from "./routes/cms/events/events";
-import caseStudiesCategories from "./routes/cms/caseStudies/categories";
-import caseStudiesTechnologies from "./routes/cms/caseStudies/technologies";
 import caseStudies from "./routes/cms/caseStudies/caseStudies";
-
-import bannerPublic from "./routes/public/banner/bannerPublic";
 import articleCategoriesPublic from "./routes/public/article/categoryPublic";
 import articleTagsPublic from "./routes/public/article/tagPublic";
 import articlePublic from "./routes/public/article/articlePublic";
@@ -92,7 +86,6 @@ app.use(
 app.use("/api/cms", cmsCors, auth);
 app.use("/api/cms", cmsCors, user);
 app.use("/api/cms", cmsCors, media);
-app.use("/api/cms", cmsCors, banner);
 app.use("/api/cms", cmsCors, services);
 app.use("/api/cms", cmsCors, industries);
 app.use("/api/cms", cmsCors, articleCategories);
@@ -102,7 +95,6 @@ app.use("/api/cms", cmsCors, event);
 app.use("/api/cms", cmsCors, caseStudies);
 
 // Public
-app.use("/api/public", publicCors, bannerPublic);
 app.use("/api/public", publicCors, articleCategoriesPublic);
 app.use("/api/public", publicCors, articleTagsPublic);
 app.use("/api/public", publicCors, articlePublic);
