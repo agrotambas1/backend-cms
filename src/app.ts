@@ -26,8 +26,6 @@ import articleTagsPublic from "./routes/public/article/tagPublic";
 import articlePublic from "./routes/public/article/articlePublic";
 import eventPublic from "./routes/public/event/event";
 import caseStudiesPublic from "./routes/public/caseStudies/caseStudyPublic";
-import caseStudiesCategoriesPublic from "./routes/public/caseStudies/categoryPublic";
-import caseStudiesTechnologiesPublic from "./routes/public/caseStudies/technologyPublic";
 
 import fileMedia from "./routes/file/file";
 
@@ -96,14 +94,11 @@ app.use("/api/cms", cmsCors, user);
 app.use("/api/cms", cmsCors, media);
 app.use("/api/cms", cmsCors, banner);
 app.use("/api/cms", cmsCors, services);
-// app.use("/api/cms", cmsCors, capabilities);
 app.use("/api/cms", cmsCors, industries);
 app.use("/api/cms", cmsCors, articleCategories);
 app.use("/api/cms", cmsCors, articleTags);
 app.use("/api/cms", cmsCors, article);
 app.use("/api/cms", cmsCors, event);
-// app.use("/api/cms", cmsCors, caseStudiesCategories);
-// app.use("/api/cms", cmsCors, caseStudiesTechnologies);
 app.use("/api/cms", cmsCors, caseStudies);
 
 // Public
@@ -113,8 +108,6 @@ app.use("/api/public", publicCors, articleTagsPublic);
 app.use("/api/public", publicCors, articlePublic);
 app.use("/api/public", publicCors, eventPublic);
 app.use("/api/public", publicCors, caseStudiesPublic);
-// app.use("/api/public", publicCors, caseStudiesCategoriesPublic);
-// app.use("/api/public", publicCors, caseStudiesTechnologiesPublic);
 
 // File
 app.use("/uploads", fileMedia);
