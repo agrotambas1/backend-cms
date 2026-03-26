@@ -94,6 +94,10 @@ app.use("/api/cms", cmsCors, event);
 app.use("/api/cms", cmsCors, caseStudies);
 
 // Public
+app.use("/api/public", (req, res, next) => {
+  res.set("Cache-Control", "no-store");
+  next();
+});
 app.use("/api/public", publicCors, articleCategoriesPublic);
 app.use("/api/public", publicCors, articleTagsPublic);
 app.use("/api/public", publicCors, articlePublic);
