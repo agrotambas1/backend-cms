@@ -7,15 +7,6 @@ import {
   buildCMSUserWhereCondition,
 } from "../../../utils/queryBuilder/cms/users/users";
 
-// export const getUser = async (req: Request, res: Response) => {
-//   if (!req.user) {
-//     return res.status(401).json({ message: "Unauthorized" });
-//   }
-
-//   const users = await prisma.user.findMany();
-//   res.json(users);
-// };
-
 export const getUser = async (req: Request, res: Response) => {
   try {
     if (!req.user) {

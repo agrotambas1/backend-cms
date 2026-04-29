@@ -185,43 +185,6 @@ export const updateTag = async (req: Request, res: Response) => {
   }
 };
 
-// export const deleteTag = async (req: Request, res: Response) => {
-//   try {
-//     if (!req.user?.id) {
-//       return res.status(401).json({ message: "Unauthorized" });
-//     }
-
-//     const { id } = req.params;
-
-//     if (!id) {
-//       return res.status(400).json({ message: "Tag ID is required" });
-//     }
-
-//     const tag = await prisma.articleTag.findUnique({
-//       where: { id },
-//     });
-
-//     if (!tag) {
-//       return res.status(404).json({ message: "Tag not found" });
-//     }
-
-//     await prisma.articleTag.update({
-//       where: { id },
-//       data: {
-//         deletedAt: new Date(),
-//       },
-//     });
-
-//     res.status(200).json({
-//       status: "success",
-//       message: "Tag deleted successfully",
-//     });
-//   } catch (error) {
-//     console.error("Error deleting tag:", error);
-//     res.status(500).json({ message: "Failed to delete tag" });
-//   }
-// };
-
 export const deleteTag = async (req: Request, res: Response) => {
   try {
     if (!req.user?.id) {

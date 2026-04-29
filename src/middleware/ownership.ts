@@ -42,7 +42,7 @@ const checkOwnership = (resourceName: string, findFunction: any) => {
 export const checkUserOwnership = (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   const { id } = req.params;
 
@@ -66,33 +66,3 @@ export const checkUserOwnership = (
 
   next();
 };
-
-// Specific ownership middlewares
-// export const checkMediaOwnership = checkOwnership(
-//   "Media",
-//   async (id: string) => {
-//     return await prisma.media.findUnique({ where: { id } });
-//   }
-// );
-
-// export const checkArticleOwnership = checkOwnership(
-//   "Article",
-//   async (id: string) => {
-//     return await prisma.article.findUnique({ where: { id } });
-//   }
-// );
-
-// export const checkEventOwnership = checkOwnership("Event", async (id: string) => {
-//   return await prisma.event.findUnique({ where: { id } });
-// });
-
-// export const checkCaseStudyOwnership = checkOwnership("CaseStudy", async (id: string) => {
-//   return await prisma.caseStudy.findUnique({ where: { id } });
-// });
-
-// export const checkBannerOwnership = checkOwnership(
-//   "Banner",
-//   async (id: string) => {
-//     return await prisma.banner.findUnique({ where: { id } });
-//   }
-// );
