@@ -47,6 +47,7 @@ const cmsOrigins = [
 const publicOrigins = [
   process.env.PUBLIC_FRONTEND_URL || "http://localhost:3002",
   process.env.PUBLIC_FRONTEND_PROD_URL,
+  process.env.PUBLIC_FRONTEND_URL_PREVIEW_PROD,
 ].filter(Boolean);
 
 const cmsCors = cors({
